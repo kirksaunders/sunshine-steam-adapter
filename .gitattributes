@@ -1,0 +1,2 @@
+# Treat static artwork files as binary, to improve how git handles them
+static-artwork/* binary

@@ -1,0 +1,6 @@
+__pycache__/
+
+# Don't commit installer-generated files
+.library-cache
+.converted-artwork-cache
+shortcuts
