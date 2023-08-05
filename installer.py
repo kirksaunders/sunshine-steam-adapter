@@ -118,6 +118,7 @@ if __name__ == '__main__':
     library.load_steam_games()
     print("Updating non-steam games...")
     library.update_non_steam_games()
+    library.to_file(LIBRARY_CACHE)
     print('Loaded all games. New non-steam games must be added manually.')
 
     while True:
