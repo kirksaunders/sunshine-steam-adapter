@@ -2,10 +2,10 @@ import os
 import pathlib
 import re
 import winreg
-from typing import List
+from typing import Any, List
 from util.game import *
 
-def read_reg_value(key, value_key):
+def read_reg_value(key, value_key: str) -> Any:
     value, _ = winreg.QueryValueEx(key, value_key)
     return value
 

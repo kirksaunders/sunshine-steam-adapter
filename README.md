@@ -20,9 +20,9 @@ Both Sunshine and Nvidia Gamestream hosts are supported. However, Sunshine is be
 
 # Usage
 ## Setup
-1. Install python3. Ensure that any files with `.py` extension are configured to run with python3.
+1. Install python 3.11 or higher. Ensure that any files with `.py` extension are configured to run with python.
 2. Clone (or download and extract) this repo. Keep it in a consistent place, where it won't be deleted/moved.
-3. Install the required pip packages by running `python3 -m pip install requirements.txt` from this repo root.
+3. Install the required pip packages by running `python3 -m pip install -r requirements.txt` from this repo root.
 
 ## Installer
 Most users will only be interested in the installer script, which provides an interactive menu for syncing your Steam library with Sunshine/Nvidia Gamestream. The general usage pattern of `installer.py` is as follows:

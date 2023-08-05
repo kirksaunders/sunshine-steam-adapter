@@ -4,10 +4,8 @@ import subprocess
 import time
 import win32com.client, win32con, win32gui
 import winreg
-
-def read_reg_value(key, value_key):
-    value, _ = winreg.QueryValueEx(key, value_key)
-    return value
+from typing import Callable, Optional
+from util.steam import read_reg_value
 
 def close_big_picture():
     handle = win32gui.FindWindow('SDL_app', 'Steam Big Picture Mode')
@@ -22,7 +20,7 @@ def get_running_processes():
         map[process.Properties_("Name").Value] = process.Properties_("ProcessID").Value
     return map
 
-def wait_for_state_with_timeout(state_checker, timeout):
+def wait_for_state_with_timeout(state_checker: Callable[[], bool], timeout: float):
     start_time = time.perf_counter()
     while not state_checker():
         if time.perf_counter() - start_time > timeout:
@@ -31,7 +29,7 @@ def wait_for_state_with_timeout(state_checker, timeout):
             exit(-1)
         time.sleep(0.25)
 
-def launch_game_and_wait_for_close(game_id=None, process_name=None):
+def launch_game_and_wait_for_close(game_id: Optional[int] = None, process_name: Optional[str] = None):
     """Launch big picture mode, launch steam game by id, wait for the game to quit, then close big picture mode.
 
     By default, this will use Steam's registry keys to detect when the game quits. However, the registry key is
@@ -63,7 +61,7 @@ def launch_game_and_wait_for_close(game_id=None, process_name=None):
         subprocess.run([steam_path, 'steam://open/bigpicture'])
 
         # Wait for big picture mode to open
-        wait_for_state_with_timeout(lambda: win32gui.FindWindow('SDL_app', 'Steam Big Picture Mode'), 15)
+        wait_for_state_with_timeout(lambda: win32gui.FindWindow('SDL_app', 'Steam Big Picture Mode') != 0, 15)
         print("Opened Steam big picture mode")
 
         # Give a little bit more buffer before starting the game
@@ -74,7 +72,7 @@ def launch_game_and_wait_for_close(game_id=None, process_name=None):
             print(f"Launching game with id={game_id}")
             subprocess.run([steam_path, f"steam://rungameid/{game_id}"])
 
-            def is_game_running():
+            def is_game_running() -> bool:
                 if process_name:
                     return process_name in get_running_processes()
                 else:

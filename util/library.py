@@ -1,12 +1,13 @@
 import json
-from typing import List, Union
+from typing import List
+from typing import Optional, Self
 import win32com.client
 from util.art import *
 from util.game import *
 from util.steam import *
     
 class Library:
-    def __init__(self, non_steam_games: List[Game]=None, exclusions: List[Game]=None):
+    def __init__(self, non_steam_games: Optional[List[Game]] = None, exclusions: Optional[List[Game]] = None):
         self.games = [] if non_steam_games is None else non_steam_games
         self.exclusions = [] if exclusions is None else exclusions
 
@@ -25,7 +26,7 @@ class Library:
     def get_non_steam_games(self) -> List[Game]:
         return [game for game in self.games if game.is_non_steam()]
     
-    def filter_loaded_non_steam_games(self, non_steam_games) -> List[Game]:
+    def filter_loaded_non_steam_games(self, non_steam_games: List[Game]) -> List[Game]:
         return [game for game in non_steam_games if not game in self.games]
 
     def add_game(self, game: Game):
@@ -53,6 +54,7 @@ class Library:
     def print_exclusions(self):
         Library.print_game_list(self.exclusions)
 
+    @staticmethod
     def print_game_list(game_list: List[Game]):
         for index, game in enumerate(game_list):
             print(f"{index + 1}.\t{game}")
@@ -98,55 +100,58 @@ class Library:
 
         print(f"Updated {update_count} and removed {remove_count} non-steam games.")
     
-    def to_file(self, file_path: Union[str, bytes, os.PathLike]):
+    def to_file(self, file_path: str):
         with open(file_path, mode='w') as file:
             json.dump(self.to_json_dict(), file, ensure_ascii=False, indent=4)
 
-    def from_file(file_path: Union[str, bytes, os.PathLike]):
+    @classmethod
+    def from_file(cls, file_path: str) -> Self:
         if not os.path.isfile(file_path):
-            return Library()
+            return cls()
         with open(file_path, mode='r') as file:
-            return Library.from_json_dict(json.load(file))
+            return cls.from_json_dict(json.load(file))
 
-    def to_json_dict(self):
+    def to_json_dict(self) -> dict:
         return {
             'non_steam_games': [game.to_json_dict() for game in self.get_non_steam_games()],
             'exclusions': [game.to_json_dict() for game in self.exclusions]
         }
     
-    def from_json_dict(j):
-        non_steam_games = [Game.from_json_dict(game) for game in j.get('non_steam_games')]
-        exclusions = [Game.from_json_dict(game) for game in j.get('exclusions')]
-        library = Library(non_steam_games=non_steam_games, exclusions=exclusions)
+    @classmethod
+    def from_json_dict(cls, j: dict) -> Self:
+        non_steam_games = [Game.from_json_dict(game) for game in j['non_steam_games']]
+        exclusions = [Game.from_json_dict(game) for game in j['exclusions']]
+        library = cls(non_steam_games=non_steam_games, exclusions=exclusions)
         return library
     
-    def to_sunshine_config_json_dict(self, launcher_path, teardown_path, static_art_dir, art_cache_dir):
-        config = {
+    def to_sunshine_config_json_dict(self, launcher_path: str, teardown_path: str, static_art_dir: str, art_cache_dir: str) -> dict:
+        config: dict = {
             'env': {
                 'PATH': "$(PATH);$(ProgramFiles(x86))\\Steam"
             },
-            'apps': [
-                {
-                    'name': 'Desktop',
-                    'image-path': 'desktop.png'
-                },
-                {
-                    'name': 'Steam Big Picture',
-                    'cmd': f"cmd /C \"{launcher_path}\"",
-                    'prep-cmd': [
-                        {
-                            'do': '',
-                            'undo': f"cmd /C \"{teardown_path}\"",
-                            'elevated': 'false'
-                        }
-                    ],
-                    'image-path': os.path.join(static_art_dir, 'steam-big-picture.png')
-                },
-            ]
         }
+        apps = [
+            {
+                'name': 'Desktop',
+                'image-path': 'desktop.png'
+            },
+            {
+                'name': 'Steam Big Picture',
+                'cmd': f"cmd /C \"{launcher_path}\"",
+                'prep-cmd': [
+                    {
+                        'do': '',
+                        'undo': f"cmd /C \"{teardown_path}\"",
+                        'elevated': 'false'
+                    }
+                ],
+                'image-path': os.path.join(static_art_dir, 'steam-big-picture.png')
+            },
+        ]
+        config['apps'] = apps
 
         for game in self.games:
-            config['apps'].append({
+            apps.append({
                 'name': game.name,
                 'cmd': f"cmd /C \"{launcher_path} {game.launcher_args()}\"",
                 'prep-cmd': [
@@ -160,7 +165,7 @@ class Library:
             })
         return config
 
-    def write_shortcuts(self, shortcut_dir, launcher_path):
+    def write_shortcuts(self, shortcut_dir: str, launcher_path: str):
         for game in self.games:
             shell = win32com.client.Dispatch("WScript.Shell")
             shortcut = shell.CreateShortCut(os.path.join(shortcut_dir, f"{game.sanitized_name()}.lnk"))
@@ -171,7 +176,7 @@ class Library:
             shortcut.WindowStyle = 1 # 7 - Minimized, 3 - Maximized, 1 - Normal
             shortcut.save()
 
-    def write_batch_shortcuts(self, shortcut_dir, launcher_path):
+    def write_batch_shortcuts(self, shortcut_dir: str, launcher_path: str):
         for game in self.games:
             with open(os.path.join(shortcut_dir, f"{game.sanitized_name()}.bat"), 'w') as file:
                 file.write(f"\"{launcher_path}\" {game.launcher_args()}\n")

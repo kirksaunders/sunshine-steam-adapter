@@ -12,28 +12,30 @@ STATIC_ART_DIR = os.path.join(SCRIPT_DIR, "static-artwork")
 DEFAULT_SUNSHINE_CONFIG_PATH = r'C:\Program Files\Sunshine\config\apps.json'
 DEFAULT_SHORTCUT_DIR = os.path.join(SCRIPT_DIR, 'shortcuts')
 
-def add_non_steam_game(library):
+def add_non_steam_game(library: Library):
     non_steam_games = sorted(get_non_steam_games())
     non_steam_games = library.filter_loaded_non_steam_games(non_steam_games)
     print(f"Found {len(non_steam_games)} non-steam games:")
     Library.print_game_list(non_steam_games)
     print('')
     choice = int(input('Input the number of the game to add: '))
+    print('')
     if choice < 1 or choice > len(non_steam_games):
         print(f"Error: Game number {choice} does not exist.")
     else:
         game = non_steam_games[choice - 1]
         id = input("Input the steam ID of non-steam game. You can find this by creating a desktop shortcut to the game, then viewing the properties of the shortcut. ID: ")
+        print('')
         game.id = id
         process_name = input(f"Input the process name to track run status (press enter to use the default of {game.process_name}): ")
+        print('')
         if process_name != '':
             game.process_name = process_name
         library.add_game(game)
         library.to_file(LIBRARY_CACHE)
-        print('')
         print(f"Added {game} to library.")
 
-def remove_game(library):
+def remove_game(library: Library):
     library.print()
     print('')
     choice = int(input("Input the number of the game to remove: "))
@@ -45,7 +47,7 @@ def remove_game(library):
         library.to_file(LIBRARY_CACHE)
         print(f"Removed {game} from library.")
 
-def remove_exclusion(library):
+def remove_exclusion(library: Library):
     print(f"There are {len(library.get_exclusions())} games removed from the list:")
     library.print_exclusions()
     print('')

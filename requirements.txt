@@ -1,2 +1,5 @@
 pywin32==306
+types-pywin32==306.0.0.3
 Pillow==10.0.0
+types-Pillow==10.0.0.2
+typing-extensions==4.7.1

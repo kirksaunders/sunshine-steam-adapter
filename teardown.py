@@ -2,6 +2,7 @@ import os
 import time
 import win32con, win32com.client, win32gui
 import winreg
+from util.steam import read_reg_value
 
 def close_big_picture():
     handle = win32gui.FindWindow('SDL_app', 'Steam Big Picture Mode')
@@ -10,7 +11,7 @@ def close_big_picture():
 
 # Check if game is still running
 with winreg.OpenKeyEx(winreg.HKEY_CURRENT_USER, r'SOFTWARE\Valve\Steam', 0, winreg.KEY_READ) as key:
-    running_app, _ = winreg.QueryValueEx(key, 'RunningAppID')
+    running_app = read_reg_value(key, 'RunningAppID')
 
     if not running_app:
         exit(0)
@@ -20,7 +21,7 @@ with winreg.OpenKeyEx(winreg.HKEY_CURRENT_USER, r'SOFTWARE\Valve\Steam', 0, winr
 
     if running_app:
         with winreg.OpenKeyEx(winreg.HKEY_CURRENT_USER, r'SOFTWARE\Valve\Steam\ActiveProcess', 0, winreg.KEY_READ) as key:
-            steam_pid, _ = winreg.QueryValueEx(key, 'pid')
+            steam_pid = read_reg_value(key, 'pid')
 
             if steam_pid:
                 # Kill any child processes of steam. This is the only way to close the game, considering we don't know its process name

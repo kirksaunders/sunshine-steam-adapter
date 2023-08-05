@@ -1,7 +1,7 @@
 import os
 from PIL import Image
 
-def convert_to_png(src_img_path, dest_img_dir_path):
+def convert_to_png(src_img_path: str, dest_img_dir_path: str) -> str:
     # Create destination directory if it doesn't exist
     if not os.path.exists(dest_img_dir_path):
         os.makedirs(dest_img_dir_path)
