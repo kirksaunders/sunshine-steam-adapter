@@ -126,6 +126,7 @@ class Library:
         return library
     
     def to_sunshine_config_json_dict(self, launcher_path: str, teardown_path: str, static_art_dir: str, art_cache_dir: str) -> dict:
+        pythonw_path = os.path.join(os.path.abspath(os.path.dirname(sys.executable)), 'pythonw.exe')
         config: dict = {
             'env': {
                 'PATH': "$(PATH);$(ProgramFiles(x86))\\Steam"
@@ -138,12 +139,12 @@ class Library:
             },
             {
                 'name': 'Steam Big Picture',
-                'cmd': f"{sys.executable} {launcher_path}",
+                'cmd': f"{pythonw_path} {launcher_path}",
                 'prep-cmd': [
                     {
                         'do': '',
-                        'undo': f"{sys.executable} {teardown_path}",
-                        'elevated': 'false'
+                        'undo': f"{pythonw_path} {teardown_path} detached",
+                        'elevated': 'true'
                     }
                 ],
                 'image-path': os.path.join(static_art_dir, 'steam-big-picture.png')
@@ -154,12 +155,12 @@ class Library:
         for game in self.games:
             apps.append({
                 'name': game.name,
-                'cmd': f"{sys.executable} {launcher_path} {game.launcher_args()}",
+                'cmd': f"{pythonw_path} {launcher_path} {game.launcher_args()}",
                 'prep-cmd': [
                     {
                         'do': '',
-                        'undo': f"{sys.executable} {teardown_path}",
-                        'elevated': 'false'
+                        'undo': f"{pythonw_path} {teardown_path} detached",
+                        'elevated': 'true'
                     }
                 ],
                 'image-path': game.get_cover_art_path(STEAM_CONFIG_PATH, art_cache_dir),

@@ -19,13 +19,12 @@ def wait_for_state_with_timeout(state_checker: Callable[[], bool], timeout: floa
     start_time = time.perf_counter()
     while not state_checker():
         if time.perf_counter() - start_time > timeout:
-            print("Previous step failed. Attempting to close Steam big picture mode and stopping execution")
-            close_big_picture()
+            print("Previous step failed. Stopping execution")
             exit(-1)
         time.sleep(0.25)
 
 def launch_game_and_wait_for_close(game_id: Optional[int] = None, process_name: Optional[str] = None):
-    """Launch big picture mode, launch steam game by id, wait for the game to quit, then close big picture mode.
+    """Launch big picture mode, launch steam game by id, then wait for the game to quit.
 
     By default, this will use Steam's registry keys to detect when the game quits. However, the registry key is
     not set for non-steam games. Therefore, you must supply the process_name argument when launching non-steam
@@ -45,18 +44,24 @@ def launch_game_and_wait_for_close(game_id: Optional[int] = None, process_name: 
             subprocess.Popen(steam_path)
 
             # Wait for steam window to show. That's how we know it has fully started
-            wait_for_state_with_timeout(lambda: win32gui.FindWindow('SDL_app', 'Steam') != 0, 15)
+            def is_steam_window_visible():
+                handle = win32gui.FindWindow('SDL_app', 'Steam')
+                return handle != 0 and win32gui.IsWindowVisible(handle)
+            wait_for_state_with_timeout(is_steam_window_visible, 15)
             print("Started Steam")
 
             # Give a little bit more buffer before starting big picture mode
-            time.sleep(1)
+            time.sleep(0.5)
 
         # Start big picture mode
         print("Opening Steam big picture mode")
         subprocess.run([steam_path, 'steam://open/bigpicture'])
 
         # Wait for big picture mode to open
-        wait_for_state_with_timeout(lambda: win32gui.FindWindow('SDL_app', 'Steam Big Picture Mode') != 0, 15)
+        def is_big_picture_mode_open():
+            handle = win32gui.FindWindow('SDL_app', 'Steam Big Picture Mode')
+            return handle != 0 and win32gui.IsWindowVisible(handle)
+        wait_for_state_with_timeout(is_big_picture_mode_open, 15)
         print("Opened Steam big picture mode")
 
         # Give a little bit more buffer before starting the game
@@ -83,9 +88,7 @@ def launch_game_and_wait_for_close(game_id: Optional[int] = None, process_name: 
                 time.sleep(0.25)
             print("Game has quit")
 
-            # Close steam big picture mode
-            print("Closing Steam big picture mode and finishing up")
-            close_big_picture()
+            # Let teardown script handle closing Steam big picture. This is to prevent the stream from showing the desktop briefly
         else:
             # Wait for big picture mode to close
             print("Waiting for Steam big picture mode to close")

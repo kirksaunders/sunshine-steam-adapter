@@ -22,6 +22,11 @@ def close_big_picture():
     if handle:
         win32gui.SendMessage(handle, win32con.WM_CLOSE)
 
+def close_steam_window():
+    handle = win32gui.FindWindow('SDL_app', 'Steam')
+    if handle:
+        win32gui.SendMessage(handle, win32con.WM_CLOSE)
+
 def get_installed_steam_games(exclusions) -> List[Game]:
     installed = []
     with winreg.OpenKeyEx(winreg.HKEY_CURRENT_USER, r'SOFTWARE\Valve\Steam\Apps', 0, winreg.KEY_READ) as root_key:
