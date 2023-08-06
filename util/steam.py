@@ -1,6 +1,7 @@
 import os
 import pathlib
 import re
+import win32con, win32gui
 import winreg
 from typing import Any, List
 from util.game import *
@@ -15,6 +16,11 @@ def get_steam_config_path():
     with winreg.OpenKeyEx(winreg.HKEY_CURRENT_USER, r'SOFTWARE\Valve\Steam\ActiveProcess', 0, winreg.KEY_READ) as key:
         active_user = read_reg_value(key, 'ActiveUser')
     return os.path.join(steam_path, f"userdata/{active_user}/config")
+
+def close_big_picture():
+    handle = win32gui.FindWindow('SDL_app', 'Steam Big Picture Mode')
+    if handle:
+        win32gui.SendMessage(handle, win32con.WM_CLOSE)
 
 def get_installed_steam_games(exclusions) -> List[Game]:
     installed = []

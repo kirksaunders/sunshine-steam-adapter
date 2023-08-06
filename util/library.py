@@ -1,4 +1,5 @@
 import json
+import sys
 from typing import List
 from typing import Optional, Self
 import win32com.client
@@ -137,11 +138,11 @@ class Library:
             },
             {
                 'name': 'Steam Big Picture',
-                'cmd': f"cmd /C \"{launcher_path}\"",
+                'cmd': f"{sys.executable} {launcher_path}",
                 'prep-cmd': [
                     {
                         'do': '',
-                        'undo': f"cmd /C \"{teardown_path}\"",
+                        'undo': f"{sys.executable} {teardown_path}",
                         'elevated': 'false'
                     }
                 ],
@@ -153,11 +154,11 @@ class Library:
         for game in self.games:
             apps.append({
                 'name': game.name,
-                'cmd': f"cmd /C \"{launcher_path} {game.launcher_args()}\"",
+                'cmd': f"{sys.executable} {launcher_path} {game.launcher_args()}",
                 'prep-cmd': [
                     {
                         'do': '',
-                        'undo': f"cmd /C \"{teardown_path}\"",
+                        'undo': f"{sys.executable} {teardown_path}",
                         'elevated': 'false'
                     }
                 ],

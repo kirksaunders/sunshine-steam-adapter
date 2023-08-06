@@ -1,4 +1,5 @@
 __pycache__/
+.mypy_cache
 
 # Don't commit installer-generated files
 .library-cache

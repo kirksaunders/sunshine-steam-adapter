@@ -2,15 +2,10 @@ import argparse
 import os
 import subprocess
 import time
-import win32com.client, win32con, win32gui
+import win32com.client, win32gui
 import winreg
 from typing import Callable, Optional
-from util.steam import read_reg_value
-
-def close_big_picture():
-    handle = win32gui.FindWindow('SDL_app', 'Steam Big Picture Mode')
-    if handle:
-        win32gui.SendMessage(handle, win32con.WM_CLOSE)
+from util.steam import *
 
 def get_running_processes():
     WMI = win32com.client.GetObject('winmgmts:')
