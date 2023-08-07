@@ -1,17 +1,16 @@
 import argparse
-import os
 import subprocess
 import sys
 import time
-import win32com.client
+import win32api, win32com.client, win32con
 import winreg
 from util.steam import *
 
 def normal_handler():
-    # Wait for a couple seconds after main launcher has finished. This is done for two reasons:
+    # Wait a second after main launcher has finished. This is done for two reasons:
     # 1. To let the stream shut down prior to closing big picture mode. We don't want the desktop to flash on the stream.
     # 2. To give the game a little bit more of a chance to terminate on its own, before we forcibly do it.
-    time.sleep(2)
+    time.sleep(1)
 
     # Kill the game process (should ideally be terminated already)
     with winreg.OpenKeyEx(winreg.HKEY_CURRENT_USER, r'SOFTWARE\Valve\Steam\ActiveProcess', 0, winreg.KEY_READ) as key:
@@ -23,8 +22,10 @@ def normal_handler():
             children = wmi.ExecQuery(f"Select * from win32_process where ParentProcessId={steam_pid}")
             for child in children:
                 if child.Name != 'steamwebhelper.exe' and child.Name != 'GameOverlayUI.exe':
-                    print(f"Killing process with name={child.Name} and id={child.Properties_('ProcessID').Value}")
-                    os.system(f"taskkill /F /T /pid {child.Properties_('ProcessID').Value}")
+                    pid = child.Properties_('ProcessID').Value
+                    print(f"Killing process with name={child.Name} and id={pid}")
+                    handle = win32api.OpenProcess(win32con.PROCESS_VM_READ | win32con.PROCESS_TERMINATE, False, pid)
+                    win32api.TerminateProcess(handle, 0)
 
     # Close big picture mode (should ideally be closed already)
     print("Closing Steam big picture mode")

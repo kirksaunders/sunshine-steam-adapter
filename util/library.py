@@ -144,7 +144,7 @@ class Library:
                     {
                         'do': '',
                         'undo': f"{pythonw_path} {teardown_path} detached",
-                        'elevated': 'true'
+                        'elevated': 'false'
                     }
                 ],
                 'image-path': os.path.join(static_art_dir, 'steam-big-picture.png')
@@ -160,7 +160,7 @@ class Library:
                     {
                         'do': '',
                         'undo': f"{pythonw_path} {teardown_path} detached",
-                        'elevated': 'true'
+                        'elevated': 'false'
                     }
                 ],
                 'image-path': game.get_cover_art_path(STEAM_CONFIG_PATH, art_cache_dir),
