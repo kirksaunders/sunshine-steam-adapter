@@ -2,9 +2,20 @@ import argparse
 import subprocess
 import sys
 import time
-import win32api, win32com.client, win32con
+import win32api, win32com.client, win32con, win32process
 import winreg
 from util.steam import *
+
+def terminate_recursive(pid: int):
+    wmi = win32com.client.GetObject('winmgmts:')
+    children = wmi.ExecQuery(f"Select * from win32_process where ParentProcessId={pid}")
+    for child in children:
+        terminate_recursive(child.Properties_('ProcessID').Value)
+    handle = win32api.OpenProcess(win32con.PROCESS_QUERY_INFORMATION | win32con.PROCESS_VM_READ | win32con.PROCESS_TERMINATE, False, pid)
+    name = win32process.GetModuleFileNameEx(handle, 0)
+    win32api.TerminateProcess(handle, 0)
+    win32api.CloseHandle(handle)
+    print(f"Killed process with exe={name} and id={pid}")
 
 def normal_handler():
     # Wait a second after main launcher has finished. This is done for two reasons:
@@ -22,10 +33,7 @@ def normal_handler():
             children = wmi.ExecQuery(f"Select * from win32_process where ParentProcessId={steam_pid}")
             for child in children:
                 if child.Name != 'steamwebhelper.exe' and child.Name != 'GameOverlayUI.exe':
-                    pid = child.Properties_('ProcessID').Value
-                    print(f"Killing process with name={child.Name} and id={pid}")
-                    handle = win32api.OpenProcess(win32con.PROCESS_VM_READ | win32con.PROCESS_TERMINATE, False, pid)
-                    win32api.TerminateProcess(handle, 0)
+                    terminate_recursive(child.Properties_('ProcessID').Value)
 
     # Close big picture mode (should ideally be closed already)
     print("Closing Steam big picture mode")
