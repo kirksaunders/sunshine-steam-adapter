@@ -13,6 +13,8 @@ Below are more details for how games added to Sunshine through this tool will be
 
 The installer will also automatically install Steam Big Picture Mode as a game in Sunshine. When launched, it will start Steam and launch Big Picture Mode. The stream will automatically end if you close Big Picture Mode.
 
+**Warning:** Sunshine currently has a bug (https://github.com/LizardByte/Sunshine/issues/1456) that causes prep commands to fail after so many runs. The only solution is to restart Sunshine on your host PC. This tool uses prep commands, and is therefore affected.
+
 # Compatibility
 Only Windows hosts are supported. The launcher relies heavily on registry keys that Steam writes. In theory, these registries also exist on Linux, but reading them would require maintaing two code paths. Contributions are welcome.
 
