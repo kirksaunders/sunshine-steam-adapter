@@ -59,7 +59,7 @@ def launch_game_and_wait_for_close(game_id: Optional[int] = None, process_name: 
 
         # Wait for big picture mode to open
         def is_big_picture_mode_open():
-            handle = win32gui.FindWindow('SDL_app', 'Steam Big Picture Mode')
+            handle = get_big_picture_window()
             return handle != 0 and win32gui.IsWindowVisible(handle)
         wait_for_state_with_timeout(is_big_picture_mode_open, 15)
         print("Opened Steam big picture mode")
@@ -92,7 +92,7 @@ def launch_game_and_wait_for_close(game_id: Optional[int] = None, process_name: 
         else:
             # Wait for big picture mode to close
             print("Waiting for Steam big picture mode to close")
-            while win32gui.FindWindow('SDL_app', 'Steam Big Picture Mode') != 0:
+            while is_big_picture_mode_open():
                 time.sleep(0.25)
             print("Steam big picture mode has closed, finishing up")
 
