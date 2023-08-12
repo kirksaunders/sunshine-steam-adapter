@@ -6,6 +6,7 @@ from util.steam import *
 SCRIPT_DIR = os.path.abspath(os.path.dirname(__file__))
 LAUNCHER_PATH = os.path.join(SCRIPT_DIR, 'launcher.py')
 TEARDOWN_PATH = os.path.join(SCRIPT_DIR, 'teardown.py')
+SETTINGS_SYNC_PATH = os.path.join(SCRIPT_DIR, 'settings-sync.py')
 LIBRARY_CACHE = os.path.join(SCRIPT_DIR, ".library-cache")
 ART_CACHE_DIR = os.path.join(SCRIPT_DIR, ".converted-artwork-cache")
 STATIC_ART_DIR = os.path.join(SCRIPT_DIR, "static-artwork")
@@ -60,13 +61,42 @@ def remove_exclusion(library: Library):
         library.to_file(LIBRARY_CACHE)
         print(f"Added {game} back to library.")
 
+def config_game_settings_sync(library: Library):
+    library.print()
+    print('')
+    choice = int(input("Input the number of the game to configure settings sync for: "))
+    print('')
+    if choice < 1 or choice > len(library.get_games()):
+        print(f"Error: Game number {choice} does not exist.")
+    else:
+        game = library.get_game(choice - 1)
+        if game.settings_path:
+            choice = ''
+            while choice != 'y' and choice != 'n':
+                choice = input(f"Settings sync already enabled for {game} for settings file {game.settings_path}. Would you like to disable it? (y/n): ")
+            print('')
+            if choice == 'y':
+                game.settings_path = None
+                library.to_file(LIBRARY_CACHE)
+                print(f"Disabled settings sync for {game}.")
+                return
+
+        settings_path = input(f"Configuring settings sync for {game}. Input the path to the game's settings file: ")
+        print('')
+        if not os.path.isfile(settings_path):
+            print(f"Error: No file {settings_path} exists.")
+            return
+        game.settings_path = os.path.abspath(settings_path)
+        library.to_file(LIBRARY_CACHE)
+        print(f"Enabled settings sync for {game} for settings file {game.settings_path}.")
+
 def write_shortcuts(library: Library):
     dir = input(f"Input the directory to save the shortcuts to (press enter to use the default of {DEFAULT_SHORTCUT_DIR}): ")
     if dir == '':
         dir = DEFAULT_SHORTCUT_DIR
     print('')
     # Create directory if it doesn't exist
-    if not os.path.exists(dir):
+    if not os.path.isdir(dir):
         os.makedirs(dir)
     print('Creating shortcuts...')
     library.write_shortcuts(dir, LAUNCHER_PATH)
@@ -78,7 +108,7 @@ def write_batch_shortcuts(library: Library):
         dir = DEFAULT_SHORTCUT_DIR
     print('')
     # Create directory if it doesn't exist
-    if not os.path.exists(dir):
+    if not os.path.isdir(dir):
         os.makedirs(dir)
     print('Creating batch shortcuts...')
     library.write_batch_shortcuts(dir, LAUNCHER_PATH)
@@ -98,7 +128,7 @@ def write_sunshine_config(library: Library):
             print('Didn\'t write Sunshine config.')
             return
     print('Writing Sunshine config...')
-    json_dict = library.to_sunshine_config_json_dict(LAUNCHER_PATH, TEARDOWN_PATH, STATIC_ART_DIR, ART_CACHE_DIR)
+    json_dict = library.to_sunshine_config_json_dict(LAUNCHER_PATH, TEARDOWN_PATH, SETTINGS_SYNC_PATH, STATIC_ART_DIR, ART_CACHE_DIR)
     with open(path, 'w', encoding='utf-8') as file:
         json.dump(json_dict, file, ensure_ascii=False, indent=4)
     print(f"Saved Sunshine config to {path}. You may need to restart Sunshine for the changes to go into effect.")
@@ -108,20 +138,19 @@ def print_menu():
     print('2. Add non-steam game')
     print('3. Remove loaded game from library')
     print('4. Return removed game to library')
-    print('5. Write games to shortcuts')
-    print('6. Write games to batch script shortcuts')
-    print('7. Write games to Sunshine config')
-    print('8. Quit')
+    print('5. Configure game settings synchronization')
+    print('6. Write games to shortcuts')
+    print('7. Write games to batch script shortcuts')
+    print('8. Write games to Sunshine config')
+    print('9. Quit')
 
 if __name__ == '__main__':
     print("Loading cached library...")
     library = Library.from_file(LIBRARY_CACHE)
-    print("Loading official steam games...")
-    library.load_steam_games()
-    print("Updating non-steam games...")
-    library.update_non_steam_games()
+    print("Syncing library with Steam games...")
+    library.sync_library_with_steam()
     library.to_file(LIBRARY_CACHE)
-    print('Loaded all games. New non-steam games must be added manually.')
+    print('Synced library. New non-steam games must be added manually.')
 
     while True:
         print('')
@@ -138,10 +167,12 @@ if __name__ == '__main__':
         elif choice == 4:
             remove_exclusion(library)
         elif choice == 5:
-            write_shortcuts(library)
+            config_game_settings_sync(library)
         elif choice == 6:
-            write_batch_shortcuts(library)
+            write_shortcuts(library)
         elif choice == 7:
-            write_sunshine_config(library)
+            write_batch_shortcuts(library)
         elif choice == 8:
+            write_sunshine_config(library)
+        elif choice == 9:
             exit(0)

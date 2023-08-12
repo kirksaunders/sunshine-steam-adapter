@@ -5,7 +5,7 @@ from typing import Optional, Self
 from util.art import *
 
 class Game:
-    def __init__(self, id: str, name: str, alt_id: Optional[str] = None, process_name: Optional[str] = None):
+    def __init__(self, id: str, name: str, alt_id: Optional[str] = None, process_name: Optional[str] = None, settings_path: Optional[str] = None):
         self.id = id
         self.name = name
         if alt_id:
@@ -14,11 +14,18 @@ class Game:
             assert not alt_id is None
         self.alt_id = alt_id
         self.process_name = process_name
+        self.settings_path = settings_path
 
     def __str__(self) -> str:
-        suffix = f", Process name = {self.process_name}) *Non-Steam" if self.process_name else ')'
-        return f"{self.name} (ID={self.id}{suffix}"
-    
+        string = f"{self.name} (ID={self.id}"
+        if self.settings_path:
+            string += f", Settings={self.settings_path}"
+        if self.process_name:
+            string += f", Process name = {self.process_name}) *Non-Steam"
+        else:
+            string += ')'
+        return string
+
     def __lt__(self, other: Self) -> bool:
         return self.name < other.name
     
@@ -39,6 +46,10 @@ class Game:
             args.append(f"-p={self.process_name}")
         return ' '.join(args)
     
+    def settings_sync_args(self) -> str:
+        args = [f"-g={self.id}", f"-s=\"{self.settings_path}\""]
+        return ' '.join(args)
+    
     def to_json_dict(self) -> dict:
         j = {
             'id': self.id,
@@ -48,11 +59,13 @@ class Game:
             j['alt_id'] = self.alt_id
         if self.process_name:
             j['process_name'] = self.process_name
+        if self.settings_path:
+            j['settings_path'] = self.settings_path
         return j
     
     @classmethod
     def from_json_dict(cls, j) -> Self:
-        return cls(id=j.get('id'), name=j.get('name'), alt_id=j.get('alt_id'), process_name=j.get('process_name'))
+        return cls(id=j.get('id'), name=j.get('name'), alt_id=j.get('alt_id'), process_name=j.get('process_name'), settings_path=j.get('settings_path'))
     
     def get_cover_art_path(self, steam_config_path: str, art_cache_dir_path: str) -> str:
         app_id = self.alt_id or self.id

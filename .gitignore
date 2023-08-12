@@ -3,5 +3,7 @@ __pycache__/
 
 # Don't commit installer-generated files
 .library-cache
+.settings-cache
 .converted-artwork-cache
 shortcuts
+logs

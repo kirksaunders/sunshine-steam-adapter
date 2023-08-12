@@ -69,7 +69,7 @@ def close_steam_window():
     if handle:
         win32gui.SendMessage(handle, win32con.WM_CLOSE)
 
-def get_installed_steam_games(exclusions) -> List[Game]:
+def get_installed_steam_games() -> List[Game]:
     installed = []
     with winreg.OpenKeyEx(winreg.HKEY_CURRENT_USER, r'SOFTWARE\Valve\Steam\Apps', 0, winreg.KEY_READ) as root_key:
         subkey_count, _, _ = winreg.QueryInfoKey(root_key)
@@ -80,10 +80,7 @@ def get_installed_steam_games(exclusions) -> List[Game]:
                     game_name = read_reg_value(game_key, 'Name')
                     game = Game(game_id, game_name)
                     if read_reg_value(game_key, 'Installed'):
-                        if game in exclusions:
-                            print(f"Excluded {game} from list, since it was previously removed.")
-                        else:
-                            installed.append(game)
+                        installed.append(game)
                     else:
                         print(f"Game {game} isn't installed. Skipping.")
                 except FileNotFoundError as e:

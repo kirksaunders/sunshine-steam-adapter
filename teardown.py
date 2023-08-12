@@ -4,7 +4,11 @@ import sys
 import time
 import win32api, win32com.client, win32con, win32process
 import winreg
+from util.log import *
 from util.steam import *
+
+SCRIPT_DIR = os.path.abspath(os.path.dirname(__file__))
+LOG = Logger(os.path.join(SCRIPT_DIR, 'logs', 'teardown-log.txt'))
 
 def terminate_recursive(pid: int):
     wmi = win32com.client.GetObject('winmgmts:')
@@ -15,9 +19,11 @@ def terminate_recursive(pid: int):
     name = win32process.GetModuleFileNameEx(handle, 0)
     win32api.TerminateProcess(handle, 0)
     win32api.CloseHandle(handle)
-    print(f"Killed process with exe={name} and id={pid}")
+    LOG.log(f"Killed process with exe={name} and id={pid}")
 
 def normal_handler():
+    LOG.log('Teardown script running in normal mode')
+
     # Wait a second after main launcher has finished. This is done for two reasons:
     # 1. To let the stream shut down prior to closing big picture mode. We don't want the desktop to flash on the stream.
     # 2. To give the game a little bit more of a chance to terminate on its own, before we forcibly do it.
@@ -33,25 +39,26 @@ def normal_handler():
             children = wmi.ExecQuery(f"Select * from win32_process where ParentProcessId={steam_pid}")
             for child in children:
                 if child.Name != 'steamwebhelper.exe' and child.Name != 'GameOverlayUI.exe':
+                    LOG.log(f"Attempting to kill process with pid={child.Properties_('ProcessID').Value} and all of its children")
                     terminate_recursive(child.Properties_('ProcessID').Value)
 
     # Close big picture mode (should ideally be closed already)
-    print("Closing Steam big picture mode")
+    LOG.log("Closing Steam big picture mode")
     close_big_picture()
-    print("Closed Steam big picture mode")
+    LOG.log("Closed Steam big picture mode")
 
     def is_steam_window_visible():
         handle = win32gui.FindWindow('SDL_app', 'Steam')
         return handle != 0 and win32gui.IsWindowVisible(handle)
     
     # Wait for Steam regular window to open. At most wait for 10 seconds
-    print("Waiting for regular Steam window to open")
+    LOG.log("Waiting for regular Steam window to open")
     start_time = time.perf_counter()
     while not is_steam_window_visible() and time.perf_counter() - start_time < 10:
         time.sleep(0.25)
 
     # Close Steam regular window. Unfortunately haven't found a better way to do this. Steam seems to try opening the window multiple times
-    print("Attempting to close regular Steam window")
+    LOG.log("Attempting to close regular Steam window")
     is_closed_count = 0
     # Require the window to report as closed twice in a row before we quit. But just give up after 5 seconds
     start_time = time.perf_counter()
@@ -60,17 +67,20 @@ def normal_handler():
             is_closed_count += 1
         else:
             is_closed_count = 0
-        print("Sending close signal to Steam window")
+        LOG.log("Sending close signal to Steam window")
         close_steam_window()
         time.sleep(0.5)
-    print("Closed regular Steam window")
+    LOG.log("Closed regular Steam window")
+    LOG.log("Teardown finished")
 
 def detached_handler():
+    LOG.log('Teardown script running in detached mode')
     # Spawn background process to close regular Steam window. This will avoid us blocking stream shutdown
     detached_flags = 0x00000008
     subprocess.Popen([sys.executable, __file__, 'normal'], creationflags=detached_flags)
+    LOG.log('Spawned background process to do actual teardown')
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser(
         prog='Sunshine Steam Adapater Teardown Script',
         description='This script is used to terminate any running Steam games, close big picture mode, and the regular Steam window.'
@@ -85,3 +95,6 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     args.handler()
+
+if __name__ == '__main__':
+    LOG.with_error_catching(main, 'teardown script')

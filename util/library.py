@@ -1,19 +1,22 @@
 import json
 import sys
+import win32com.client
 from typing import List
 from typing import Optional, Self
-import win32com.client
 from util.art import *
 from util.game import *
 from util.steam import *
     
 class Library:
-    def __init__(self, non_steam_games: Optional[List[Game]] = None, exclusions: Optional[List[Game]] = None):
-        self.games = [] if non_steam_games is None else non_steam_games
+    def __init__(self, games: Optional[List[Game]] = None, exclusions: Optional[List[Game]] = None):
+        self.games = [] if games is None else games
         self.exclusions = [] if exclusions is None else exclusions
 
         self._sort_games()
         self._sort_exclusions()
+
+    def get_game(self, index: int) -> Game:
+        return self.games[index]
 
     def get_games(self) -> List[Game]:
         return self.games
@@ -60,72 +63,82 @@ class Library:
         for index, game in enumerate(game_list):
             print(f"{index + 1}.\t{game}")
 
-    def load_steam_games(self):
-        steam_games = get_installed_steam_games(self.exclusions)
-        count = 0
-        for game in steam_games:
-            if not game in self.games:
-                self.games.append(game)
-                count += 1
-        self._sort_games()
-        print(f"Loaded {count} official steam games.")
-
-    def update_non_steam_games(self):
+    def sync_library_with_steam(self):
         update_count = 0
         remove_count = 0
+        add_count = 0
+        new_games = get_installed_steam_games() + get_non_steam_games()
+
+        # Add/update existing games if names have changed
+        for new_game in new_games:
+            found = False
+            for game in self.games:
+                if game == new_game:
+                    if game.name != new_game.name:
+                        print(f"Updating {game} name to match newly read value: {new_game.name}")
+                        game.name = new_game.name
+                        update_count += 1
+                    found = True
+                    break
+
+            if not found and not new_game.is_non_steam():
+                if new_game in self.exclusions:
+                    print(f"Not adding {new_game} to library, since it was previously removed.")
+                else:
+                    self.add_game(new_game)
+                    add_count += 1
+                    print(f"Added {new_game} to library.")
+
+        # Remove games from library if they weren't found in Steam
         index = 0
         while index < len(self.games):
             game = self.games[index]
-            found = False
-            for non_steam_game in get_non_steam_games():
-                if game.alt_id == non_steam_game.alt_id:
-                    if game.name != non_steam_game.name:
-                        print(f"Updating {game} name to match newly read value: {non_steam_game.name}")
-                        game.name = non_steam_game.name
-                        update_count += 1
-                    found = True
-            if game.is_non_steam() and not found:
+            if not game in new_games:
                 print('')
                 choice = ''
                 while choice != 'y' and choice != 'n':
-                    choice = input(f"Library cache contains non-steam game {game}. But couldn't find non-steam game in steam library. Do you want to remove it? (y/n): ")
+                    choice = input(f"Library contains {game}, but couldn't find it in Steam library. Do you want to remove it? (y/n): ")
                 print('')
                 if choice == 'y':
                     self.remove_game(index)
                     remove_count += 1
                     index -= 1
-                    print('Removed non-steam game {game} from library.')
+                    print(f"Removed game {game} from library.")
                 else:
-                    print('Didn\'t remove game.')
+                    print(f"Didn\'t remove game {game}.")
             index += 1
 
-        print(f"Updated {update_count} and removed {remove_count} non-steam games.")
+        self._sort_games()
+        print('')
+        print(f"Updated {update_count}, removed {remove_count}, and added {add_count} games based on Steam library.")
     
     def to_file(self, file_path: str):
-        with open(file_path, mode='w') as file:
+        with open(file_path, mode='w', encoding='utf8') as file:
             json.dump(self.to_json_dict(), file, ensure_ascii=False, indent=4)
 
     @classmethod
     def from_file(cls, file_path: str) -> Self:
         if not os.path.isfile(file_path):
             return cls()
-        with open(file_path, mode='r') as file:
+        with open(file_path, mode='r', encoding='utf8') as file:
             return cls.from_json_dict(json.load(file))
 
     def to_json_dict(self) -> dict:
         return {
-            'non_steam_games': [game.to_json_dict() for game in self.get_non_steam_games()],
+            'games': [game.to_json_dict() for game in self.games],
             'exclusions': [game.to_json_dict() for game in self.exclusions]
         }
     
     @classmethod
     def from_json_dict(cls, j: dict) -> Self:
-        non_steam_games = [Game.from_json_dict(game) for game in j['non_steam_games']]
+        # Support legacy format, which only saved non-steam games
+        games_arr = j.get('non_steam_games') or j['games']
+        games = [Game.from_json_dict(game) for game in games_arr]
         exclusions = [Game.from_json_dict(game) for game in j['exclusions']]
-        library = cls(non_steam_games=non_steam_games, exclusions=exclusions)
+        library = cls(games=games, exclusions=exclusions)
         return library
     
-    def to_sunshine_config_json_dict(self, launcher_path: str, teardown_path: str, static_art_dir: str, art_cache_dir: str) -> dict:
+    def to_sunshine_config_json_dict(self, launcher_path: str, teardown_path: str, settings_sync_path: str, static_art_dir: str, art_cache_dir: str) -> dict:
         pythonw_path = os.path.join(os.path.abspath(os.path.dirname(sys.executable)), 'pythonw.exe')
         config: dict = {
             'env': {
@@ -153,16 +166,24 @@ class Library:
         config['apps'] = apps
 
         for game in self.games:
+            prep_cmds = [
+                {
+                    'do': '',
+                    'undo': f"{pythonw_path} {teardown_path} detached",
+                    'elevated': 'false'
+                }
+            ]
+            if game.settings_path:
+                prep_cmds.insert(0, {
+                    'do': f"{pythonw_path} {settings_sync_path} {game.settings_sync_args()} load",
+                    'undo': f"{pythonw_path} {settings_sync_path} {game.settings_sync_args()} save",
+                    'elevated': 'false'
+                })
+
             apps.append({
                 'name': game.name,
                 'cmd': f"{pythonw_path} {launcher_path} {game.launcher_args()}",
-                'prep-cmd': [
-                    {
-                        'do': '',
-                        'undo': f"{pythonw_path} {teardown_path} detached",
-                        'elevated': 'false'
-                    }
-                ],
+                'prep-cmd': prep_cmds,
                 'image-path': game.get_cover_art_path(STEAM_CONFIG_PATH, art_cache_dir),
             })
         return config
