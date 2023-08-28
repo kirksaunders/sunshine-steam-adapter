@@ -35,9 +35,9 @@ Most users will only be interested in the installer script, which provides an in
 2. Run installer with `python3 installer.py` or `./installer.py`.
 3. The installer will automatically load all of your installed official steam games.
 4. If you have previously run the script, your previous state will be loaded. This includes any non-steam games that you have added, and any official steam games that you have explicitly removed from your Sunshine/Gamestream library.
-5. If any of your non-steam games have changed name, those changes will be detected. If any non-steam games have been removed from steam, you will be prompted to remove them from your Sunshine/Gamestream library.
+5. If any of your games have changed name, those changes will be detected. If any games have been removed/uninstalled from Steam, you will be prompted to remove them from your Sunshine/Gamestream library.
 6. Follow the menu prompts to make any changes to your library. You can remove official steam games, add non-steam games, configure settings sync, etc.
-7. After you have finished making changes, you must choose a menu option to apply to Sunshine/Nvidia Gamestream.
+7. After you have finished making changes, you must choose the menu option to apply to Sunshine/Nvidia Gamestream.
     1. If using Nvidia Gamestream, you must choose the menu option to create batch shortcuts. The shortcuts will be saved to your directory of choosing. You must manually add each shortcut to Nvidia Gamestream via Nvidia GeForce Experience settings.
     2. If using Sunshine, you must choose the menu option to write to a Sunshine config file. The default save location is the system-wide Sunshine config file. This file requires admin access to modify by default. So, either modify its permissions to allow your user to modify it, or run this script as administrator, or write to a different location and copy over to the protected file manually. **Warning: The existing contents of your config file are not preserved. If you want to maintain your existing Sunshine games, save to a different location, then merge the two manually.**
 8. Quit the script. Your changes are automatically saved. The next time you run the script, it will remember your non-steam games and which games you have explicitly removed from your library.
@@ -50,7 +50,7 @@ Advanced users may be interested in using the launcher script directly. This lau
 For usage, run `python3 launcher.py --help`. You can also read the source of `launcher.py` (it's well-commented) to see what exactly it's doing.
 
 ## Teardown
-Similarly to the launcher script, there's a teardown script. This teardown script will ensure that the game is terminated after the stream ends. This is only relevant for Sunshine, since Nvidia Gamestream doesn't provide an ability to run scripts after the stream ends. This script will check if any steam game is running after the stream ends. If there is, it will kill any child processes of Steam. Advanced users: read source of `teardown.py` for more details.
+Similarly to the launcher script, there's a teardown script. This teardown script will ensure that the game is terminated after the stream ends. This is only relevant for Sunshine, since Nvidia Gamestream doesn't provide an ability to run scripts after the stream ends. It does this by killing all non-official child processes of Steam. Advanced users: read source of `teardown.py` for more details.
 
 ## Settings Sync
 Included is also a settings synchronization script. This script will allow you to make settings changes in your games specifically for each stream resolution. These settings will only apply when streaming to that same stream resolution. The script has two modes: load and save.
