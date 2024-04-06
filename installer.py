@@ -1,5 +1,6 @@
 import json
 import os
+import traceback
 from util.library import *
 from util.steam import *
 
@@ -146,7 +147,11 @@ def print_menu():
 
 if __name__ == '__main__':
     print("Loading cached library...")
-    library = Library.from_file(LIBRARY_CACHE)
+    try:
+        library = Library.from_file(LIBRARY_CACHE)
+    except BaseException as e:
+        print(f"Failed to read cached library. It may be corrupted. Quitting to avoid overwriting it. Error was: {traceback.format_exc()}")
+        sys.exit(-1)
     print("Syncing library with Steam games...")
     library.sync_library_with_steam()
     library.to_file(LIBRARY_CACHE)
@@ -169,10 +174,22 @@ if __name__ == '__main__':
         elif choice == 5:
             config_game_settings_sync(library)
         elif choice == 6:
-            write_shortcuts(library)
+            try:
+                write_shortcuts(library)
+            except BaseException as e:
+                print('')
+                print(f"Failed to write shortcuts. Error was: {traceback.format_exc()}")
         elif choice == 7:
-            write_batch_shortcuts(library)
+            try:
+                write_batch_shortcuts(library)
+            except BaseException as e:
+                print('')
+                print(f"Failed to write batch shortcuts. Error was: {traceback.format_exc()}")
         elif choice == 8:
-            write_sunshine_config(library)
+            try:
+                write_sunshine_config(library)
+            except BaseException as e:
+                print('')
+                print(f"Failed to write Sunshine config. Error was: {traceback.format_exc()}")
         elif choice == 9:
             exit(0)

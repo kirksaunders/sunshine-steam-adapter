@@ -116,6 +116,9 @@ STEAM_CONFIG_PATH = get_steam_config_path()
 
 def get_non_steam_games() -> List[Game]:
     shortcut_path = os.path.join(STEAM_CONFIG_PATH, 'shortcuts.vdf')
+    if not os.path.isfile(shortcut_path):
+        print(f"No non-steam games shortcut file found at {shortcut_path}. Assuming no non-steam games are installed.")
+        return []
     shortcut_bytes = pathlib.Path(shortcut_path).read_bytes()
 
 	# The actual binary format is known, but using regexes is way easier than

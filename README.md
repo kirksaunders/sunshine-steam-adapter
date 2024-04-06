@@ -44,6 +44,9 @@ Most users will only be interested in the installer script, which provides an in
 
 **Important:** If you move/rename/remove your local checkout of this git repository, any games you've added to Sunshine will stop working. You must keep this repository around.
 
+### Troubleshooting
+If you see `Game id=<game id> either doesn't have name, or installed flag. Skipping.` for a Steam game that you expect to be working, then try launching the game through Steam, letting it load, then quitting it. Afterwards, try running the installer script again. Steam doesn't write all registry keys until the game has been launched at least once.
+
 ## Launcher
 Advanced users may be interested in using the launcher script directly. This launcher is a wrapper around Steam's `steam://rungame/<app-id>` API. It will ensure the game is launched in big picture mode, and will block until the game terminates. It also supports non-steam games (although it requires an extra parameter to track when the game ends).
 
