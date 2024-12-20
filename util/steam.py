@@ -1,8 +1,8 @@
 import os
-import pathlib
 import re
 import win32con, win32gui
 import winreg
+from pathlib import Path
 from typing import Any, List
 from util.game import *
 
@@ -41,19 +41,37 @@ def read_reg_value(key, value_key: str) -> Any:
     value, _ = winreg.QueryValueEx(key, value_key)
     return value
 
+def get_steam_install_path() -> Path:
+    with winreg.OpenKeyEx(winreg.HKEY_CURRENT_USER, r'SOFTWARE\Valve\Steam', 0, winreg.KEY_READ) as key:
+        return Path(read_reg_value(key, 'SteamPath'))
+
+def get_localization_entry(key: str) -> str | None:
+    language = get_steam_language()
+    localization_file_path = get_steam_install_path() / "steamui" / "localization" / f"steamui_{language}-json.js"
+    if not localization_file_path.is_file():
+        raise FileNotFoundError(f"Could not find steam localization file at {localization_file_path}")
+
+    value_pattern = re.compile(r'"' + re.escape(key) + r'":"([^"\\]*(\\.[^"\\]*)*)"')
+    with localization_file_path.open(encoding="utf-8") as localization_file:
+        value_match = value_pattern.search(localization_file.read())
+        if value_match:
+            return value_match.group(1).replace("\\'", "'")
+
+    return None
+
 def get_steam_language() -> str:
     with winreg.OpenKeyEx(winreg.HKEY_CURRENT_USER, r'SOFTWARE\Valve\Steam', 0, winreg.KEY_READ) as key:
         return read_reg_value(key, 'Language')
 
-def get_steam_config_path():
-    with winreg.OpenKeyEx(winreg.HKEY_CURRENT_USER, r'SOFTWARE\Valve\Steam', 0, winreg.KEY_READ) as key:
-        steam_path = read_reg_value(key, 'SteamPath')
+def get_steam_config_path() -> Path:
     with winreg.OpenKeyEx(winreg.HKEY_CURRENT_USER, r'SOFTWARE\Valve\Steam\ActiveProcess', 0, winreg.KEY_READ) as key:
-        active_user = read_reg_value(key, 'ActiveUser')
-    return os.path.join(steam_path, f"userdata/{active_user}/config")
+        return get_steam_install_path() / 'userdata' / str(read_reg_value(key, 'ActiveUser')) / 'config'
 
 def get_big_picture_window() -> int:
-    title = BIG_PICTURE_WINDOW_TITLE_BY_LANGUAGE[get_steam_language()]
+    title = get_localization_entry('SP_WindowTitle_BigPicture')
+    if not title:
+        raise ValueError('Failed to find Big Picture mode window title in localization file')
+
     return win32gui.FindWindow('SDL_app', title)
 
 def get_steam_window() -> int:
@@ -87,6 +105,7 @@ def get_installed_steam_games() -> List[Game]:
                     print(f"Game id={game_id} either doesn't have name, or installed flag. Skipping.")
     return installed
 
+# Expose the steam config path as a constant value so it can be used without re-computing it
 STEAM_CONFIG_PATH = get_steam_config_path()
 
 # The following function is adapted from code originally from https://github.com/boppreh/steamgrid.
@@ -115,11 +134,11 @@ STEAM_CONFIG_PATH = get_steam_config_path()
 # SOFTWARE.
 
 def get_non_steam_games() -> List[Game]:
-    shortcut_path = os.path.join(STEAM_CONFIG_PATH, 'shortcuts.vdf')
-    if not os.path.isfile(shortcut_path):
+    shortcut_path = STEAM_CONFIG_PATH / 'shortcuts.vdf'
+    if not shortcut_path.is_file():
         print(f"No non-steam games shortcut file found at {shortcut_path}. Assuming no non-steam games are installed.")
         return []
-    shortcut_bytes = pathlib.Path(shortcut_path).read_bytes()
+    shortcut_bytes = shortcut_path.read_bytes()
 
 	# The actual binary format is known, but using regexes is way easier than
 	# parsing the entire file. If I run into any problems I'll replace this.
