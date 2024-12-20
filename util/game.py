@@ -28,28 +28,28 @@ class Game:
 
     def __lt__(self, other: Self) -> bool:
         return self.name < other.name
-    
+
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Game):
             return NotImplemented
         return self.id == other.id or (self.alt_id != None and self.alt_id == other.alt_id)
-    
+
     def is_non_steam(self) -> bool:
         return not self.alt_id is None
-    
+
     def sanitized_name(self) -> str:
         return re.sub(r'[^\w_. -]', '_', self.name)
-    
+
     def launcher_args(self) -> str:
         args = [f"-g={self.id}"]
         if self.process_name:
             args.append(f"-p={self.process_name}")
         return ' '.join(args)
-    
+
     def settings_sync_args(self) -> str:
         args = [f"-g={self.id}", f"-s=\"{self.settings_path}\""]
         return ' '.join(args)
-    
+
     def to_json_dict(self) -> dict:
         j = {
             'id': self.id,
@@ -62,11 +62,11 @@ class Game:
         if self.settings_path:
             j['settings_path'] = self.settings_path
         return j
-    
+
     @classmethod
     def from_json_dict(cls, j) -> Self:
         return cls(id=j.get('id'), name=j.get('name'), alt_id=j.get('alt_id'), process_name=j.get('process_name'), settings_path=j.get('settings_path'))
-    
+
     def get_cover_art_path(self, steam_config_path: str, art_cache_dir_path: str) -> str:
         app_id = self.alt_id or self.id
 
@@ -79,7 +79,7 @@ class Game:
                 return match
             else:
                 return convert_to_png(match, art_cache_dir_path)
-        
+
         # Then look in librarycache
         matches = glob.glob(os.path.abspath(os.path.join(steam_config_path, f"../../../appcache/librarycache/{app_id}_library_600x900.*")))
         if len(matches) > 0:
@@ -89,6 +89,6 @@ class Game:
                 return match
             else:
                 return convert_to_png(match, art_cache_dir_path)
-        
+
         # Just return empty string if we can't find anything
         return ''

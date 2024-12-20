@@ -6,7 +6,7 @@ from typing import Optional, Self
 from util.art import *
 from util.game import *
 from util.steam import *
-    
+
 class Library:
     def __init__(self, games: Optional[List[Game]] = None, exclusions: Optional[List[Game]] = None):
         self.games = [] if games is None else games
@@ -20,16 +20,16 @@ class Library:
 
     def get_games(self) -> List[Game]:
         return self.games
-    
+
     def get_exclusions(self) -> List[Game]:
         return self.exclusions
-        
+
     def get_steam_games(self) -> List[Game]:
         return [game for game in self.games if not game.is_non_steam()]
 
     def get_non_steam_games(self) -> List[Game]:
         return [game for game in self.games if game.is_non_steam()]
-    
+
     def filter_loaded_non_steam_games(self, non_steam_games: List[Game]) -> List[Game]:
         return [game for game in non_steam_games if not game in self.games]
 
@@ -41,17 +41,16 @@ class Library:
         self.exclusions.append(exclusion)
         self._sort_exclusions()
 
-    def remove_game(self, index: int) -> Game:
-        game = self.games.pop(index)
+    def remove_game(self, game: Game):
+        self.games.remove(game)
         if not game.is_non_steam():
             self.add_exclusion(game)
-        return game
-    
-    def remove_exclusion(self, index: int) -> Game:
-        game = self.exclusions.pop(index)
+
+    def remove_exclusion(self, game: Game) -> Game:
+        self.exclusions.remove(game)
         self.add_game(game)
         return game
-    
+
     def print(self):
         Library.print_game_list(self.games)
 
@@ -111,7 +110,7 @@ class Library:
         self._sort_games()
         print('')
         print(f"Updated {update_count}, removed {remove_count}, and added {add_count} games based on Steam library.")
-    
+
     def to_file(self, file_path: str):
         with open(file_path, mode='w', encoding='utf8') as file:
             json.dump(self.to_json_dict(), file, ensure_ascii=False, indent=4)
@@ -128,7 +127,7 @@ class Library:
             'games': [game.to_json_dict() for game in self.games],
             'exclusions': [game.to_json_dict() for game in self.exclusions]
         }
-    
+
     @classmethod
     def from_json_dict(cls, j: dict) -> Self:
         # Support legacy format, which only saved non-steam games
@@ -137,7 +136,7 @@ class Library:
         exclusions = [Game.from_json_dict(game) for game in j['exclusions']]
         library = cls(games=games, exclusions=exclusions)
         return library
-    
+
     def to_sunshine_config_json_dict(self, launcher_path: str, teardown_path: str, settings_sync_path: str, static_art_dir: str, art_cache_dir: str) -> dict:
         pythonw_path = os.path.join(os.path.abspath(os.path.dirname(sys.executable)), 'pythonw.exe')
         config: dict = {

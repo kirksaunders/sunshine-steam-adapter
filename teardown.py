@@ -50,7 +50,7 @@ def normal_handler():
     def is_steam_window_visible():
         handle = win32gui.FindWindow('SDL_app', 'Steam')
         return handle != 0 and win32gui.IsWindowVisible(handle)
-    
+
     # Wait for Steam regular window to open. At most wait for 10 seconds
     LOG.log("Waiting for regular Steam window to open")
     start_time = time.perf_counter()
