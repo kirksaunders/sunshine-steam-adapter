@@ -6,37 +6,6 @@ from pathlib import Path
 from typing import Any, List
 from util.game import *
 
-BIG_PICTURE_WINDOW_TITLE_BY_LANGUAGE = {
-    'schinese': 'Steam 大屏幕模式',
-    'tchinese': 'Steam Big Picture 模式',
-    'japanese': 'Steam Big Pictureモード',
-    'koreana': 'Steam Big Picture 모드',
-    'thai': 'โหมด Big Picture บน Steam',
-    'bulgarian': 'Steam режим „Голям екран“',
-    'czech': 'Steam – režim Big Picture',
-    'danish': 'Steam Big Picture-tilstand',
-    'german': 'Big-Picture-Modus',
-    'english': 'Steam Big Picture Mode',
-    'spanish': 'Modo Big Picture de Steam',
-    'latam': 'Modo Big Picture de Steam',
-    'greek': 'Steam – Λειτουργία Big Picture',
-    'french': 'Steam : mode Big Picture',
-    'italian': 'Modalità Big Picture di Steam',
-    'hungarian': 'Steam Nagy Kép mód',
-    'dutch': 'Steam: Big Picture-modus',
-    'norwegian': 'Steam – Big Picture-modus',
-    'polish': 'Tryb Big Picture Steam',
-    'portuguese': 'Steam: Big Picture',
-    'brazilian': 'Steam — Modo Big Picture',
-    'romanian': 'Steam – modul Big Picture',
-    'russian': 'Режим Big Picture',
-    'finnish': 'Steamin televisiotila',
-    'swedish': 'Steams Big Picture-läge',
-    'turkish': 'Steam Geniş Ekran Modu',
-    'vietnamese': 'Chế độ Big Picture trên Steam',
-    'ukrainian': 'Steam у режимі Big Picture'
-}
-
 def read_reg_value(key, value_key: str) -> Any:
     value, _ = winreg.QueryValueEx(key, value_key)
     return value
