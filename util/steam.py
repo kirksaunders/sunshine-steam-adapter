@@ -56,6 +56,11 @@ def close_steam_window():
     if handle:
         win32gui.SendMessage(handle, win32con.WM_CLOSE)
 
+def get_app_id_from_alt_id(alt_id: int):
+    # The steam shortcut id (id used to launch the game) is a 64-bit unsigned integer.
+    # The 32 upper bits are simply the game's alt id. The lower 32 bits are constant.
+    return (alt_id << 32) | 0x02000000
+
 def get_installed_steam_games() -> List[Game]:
     installed = []
     with winreg.OpenKeyEx(winreg.HKEY_CURRENT_USER, r'SOFTWARE\Valve\Steam\Apps', 0, winreg.KEY_READ) as root_key:
@@ -111,13 +116,14 @@ def get_non_steam_games() -> List[Game]:
 
 	# The actual binary format is known, but using regexes is way easier than
 	# parsing the entire file. If I run into any problems I'll replace this.
-    game_pattern = re.compile(b"(?i)\x00\x02appid\x00(.{4})\x01appname\x00([^\x08]+?)\x00\x01exe\x00([^\x08]+?)\x00\x01.+?\x00tags\x00(?:\x01([^\x08]+?)|)\x08\x08")
+    game_pattern = re.compile(b"\x00\x02appid\x00(.{4})\x01appname\x00([^\x08]+?)\x00\x01exe\x00([^\x08]+?)\x00\x01.+?\x00tags\x00(?:\x01([^\x08]+?)|)\x08\x08", flags=re.DOTALL | re.IGNORECASE)
     games = []
     for game_match in game_pattern.findall(shortcut_bytes):
-        id = str(int.from_bytes(game_match[0], byteorder='little', signed=False))
+        alt_id = int.from_bytes(game_match[0], byteorder='little', signed=False)
+        id = get_app_id_from_alt_id(alt_id)
         name = game_match[1].decode('utf-8')
         target = game_match[2].decode('utf-8')
         target_process = os.path.basename(re.sub(r'^"|"$', '', target))
-        games.append(Game(id="unknown", name=name, alt_id=id, process_name=target_process))
+        games.append(Game(id=str(id), name=name, alt_id=str(id), process_name=target_process))
 
     return games

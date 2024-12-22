@@ -21,9 +21,10 @@ class Game:
         if self.settings_path:
             string += f", Settings={self.settings_path}"
         if self.process_name:
-            string += f", Process name = {self.process_name}) *Non-Steam"
-        else:
-            string += ')'
+            string += f", Process name = {self.process_name}"
+        string += ')'
+        if self.alt_id:
+            string += ' *Non-Steam'
         return string
 
     def __lt__(self, other: Self) -> bool:

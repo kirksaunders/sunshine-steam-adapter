@@ -41,15 +41,17 @@ class Library:
         self.exclusions.append(exclusion)
         self._sort_exclusions()
 
-    def remove_game(self, game: Game):
+    def remove_game(self, game: Game, skip_exclusion: bool = False):
         self.games.remove(game)
-        if not game.is_non_steam():
+        if not skip_exclusion:
             self.add_exclusion(game)
 
-    def remove_exclusion(self, game: Game) -> Game:
+    def remove_exclusion(self, game: Game):
         self.exclusions.remove(game)
         self.add_game(game)
-        return game
+
+    def purge_exclusion(self, game: Game):
+        self.exclusions.remove(game)
 
     def print(self):
         Library.print_game_list(self.games)
@@ -66,6 +68,7 @@ class Library:
         update_count = 0
         remove_count = 0
         add_count = 0
+        purge_count = 0
         new_games = get_installed_steam_games() + get_non_steam_games()
 
         # Add/update existing games if names have changed
@@ -80,7 +83,7 @@ class Library:
                     found = True
                     break
 
-            if not found and not new_game.is_non_steam():
+            if not found:
                 if new_game in self.exclusions:
                     print(f"Not adding {new_game} to library, since it was previously removed.")
                 else:
@@ -89,9 +92,7 @@ class Library:
                     print(f"Added {new_game} to library.")
 
         # Remove games from library if they weren't found in Steam
-        index = 0
-        while index < len(self.games):
-            game = self.games[index]
+        for game in self.games:
             if not game in new_games:
                 print('')
                 choice = ''
@@ -99,17 +100,33 @@ class Library:
                     choice = input(f"Library contains {game}, but couldn't find it in Steam library. Do you want to remove it? (y/n): ")
                 print('')
                 if choice == 'y':
-                    self.remove_game(index)
+                    self.remove_game(game, skip_exclusion=True)
                     remove_count += 1
-                    index -= 1
                     print(f"Removed game {game} from library.")
                 else:
-                    print(f"Didn\'t remove game {game}.")
-            index += 1
+                    print(f"Did not remove game {game}.")
+
+        # Remove exclusions if they weren't found in Steam. One downside: if user excludes a game, then
+        # uninstalls it, then runs the script, it will be removed from the exclusions. If user then
+        # reinstalls it and expects it to be excluded still, that won't happen. This seems like a fine
+        # tradeoff to prevent stale entries in the exclusion list.
+        for game in self.exclusions:
+            if not game in new_games:
+                print('')
+                choice = ''
+                while choice != 'y' and choice != 'n':
+                    choice = input(f"Library contains exclusion for {game}, but couldn't find it in Steam library. Do you want to remove it? (y/n): ")
+                print('')
+                if choice == 'y':
+                    self.purge_exclusion(game)
+                    purge_count += 1
+                    print(f"Purged game {game} from exclusions.")
+                else:
+                    print(f"Did not purge game {game} from exclusions.")
 
         self._sort_games()
         print('')
-        print(f"Updated {update_count}, removed {remove_count}, and added {add_count} games based on Steam library.")
+        print(f"Added {add_count} games, updated {update_count} games, removed {remove_count} games, and purged {purge_count} exclusions based on Steam library.")
 
     def to_file(self, file_path: str):
         with open(file_path, mode='w', encoding='utf8') as file:

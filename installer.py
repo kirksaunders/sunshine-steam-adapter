@@ -73,25 +73,20 @@ def select_games(initial_prompt: str, confirmation_prompt: str, games: List[Game
         return []
     return selected_games
 
-def add_non_steam_game(library: Library):
-    non_steam_games = sorted(get_non_steam_games())
-    non_steam_games = library.filter_loaded_non_steam_games(non_steam_games)
-    print(f"Found {len(non_steam_games)} non-steam games:")
+def configure_non_steam_game(library: Library):
+    print(f"There are currently {len(library.get_non_steam_games())} non-steam games in your library:")
     games = select_games('Input the number of the game(s) to add: ',
-                         "Are you sure you'd like to add the above games?",
-                         non_steam_games)
-    print(f"Will add {len(games)} non-steam games.")
+                         "Are you sure you'd like to configure the above games?",
+                         library.get_non_steam_games())
+    print(f"Will configure {len(games)} non-steam games.")
     for game in games:
         print('')
-        print(f"Adding {game}...")
-        id = input('Input the steam ID of non-steam game. You can find this by creating a desktop shortcut to the game, then viewing the properties of the shortcut. ID: ')
-        game.id = id
-        process_name = input(f"Input the process name to track run status (press enter to use the default of {game.process_name}): ")
+        print(f"Configuring {game}...")
+        process_name = input(f"Input the process name to track run status (press enter to keep current value of {game.process_name}): ")
         if process_name != '':
             game.process_name = process_name
-        library.add_game(game)
         library.to_file(LIBRARY_CACHE)
-        print(f"Added {game} to library.")
+        print(f"Successfully configured {game}.")
 
 def remove_game(library: Library):
     print(f"There are currently {len(library.get_games())} games in your library:")
@@ -115,7 +110,7 @@ def remove_exclusion(library: Library):
         library.to_file(LIBRARY_CACHE)
         print(f"Added {game} back to library.")
 
-def config_game_settings_sync(library: Library):
+def configure_game_settings_sync(library: Library):
     print(f"There are currently {len(library.get_games())} games in your library:")
     games = select_games('Input the number of the game(s) to configure settings sync for: ',
                          "Are you sure you'd like to configure settings sync for the above games?",
@@ -152,6 +147,7 @@ def write_shortcuts(library: Library):
         os.makedirs(dir)
     print('Creating shortcuts...')
     library.write_shortcuts(dir, LAUNCHER_PATH)
+    print('')
     print(f"Created shortcuts in {dir}.")
 
 def write_batch_shortcuts(library: Library):
@@ -163,6 +159,7 @@ def write_batch_shortcuts(library: Library):
         os.makedirs(dir)
     print('Creating batch shortcuts...')
     library.write_batch_shortcuts(dir, LAUNCHER_PATH)
+    print('')
     print(f"Created batch shortcuts in {dir}.")
 
 def write_sunshine_config(library: Library):
@@ -174,19 +171,20 @@ def write_sunshine_config(library: Library):
         while choice != 'y' and choice != 'n':
             choice = input(f"Config file {path} already exists. Do you want to overwrite it? (y/n): ")
         if choice == 'n':
-            print('Didn\'t write Sunshine config.')
+            print('Did not write Sunshine config.')
             return
     print('Writing Sunshine config...')
     json_dict = library.to_sunshine_config_json_dict(LAUNCHER_PATH, TEARDOWN_PATH, SETTINGS_SYNC_PATH, STATIC_ART_DIR, ART_CACHE_DIR)
     with open(path, 'w', encoding='utf-8') as file:
         json.dump(json_dict, file, ensure_ascii=False, indent=4)
+    print('')
     print(f"Saved Sunshine config to {path}. You may need to restart Sunshine for the changes to go into effect.")
 
 def print_menu():
     print('1. List loaded games')
-    print('2. Add non-steam game')
-    print('3. Remove loaded game from library')
-    print('4. Return removed game to library')
+    print('2. Remove game from library')
+    print('3. Return removed game to library')
+    print('4. Configure non-steam game')
     print('5. Configure game settings synchronization')
     print('6. Write games to shortcuts')
     print('7. Write games to batch script shortcuts')
@@ -212,13 +210,13 @@ if __name__ == '__main__':
         if choice == 1:
             library.print()
         elif choice == 2:
-            add_non_steam_game(library)
-        elif choice == 3:
             remove_game(library)
-        elif choice == 4:
+        elif choice == 3:
             remove_exclusion(library)
+        elif choice == 4:
+            configure_non_steam_game(library)
         elif choice == 5:
-            config_game_settings_sync(library)
+            configure_game_settings_sync(library)
         elif choice == 6:
             try:
                 write_shortcuts(library)
