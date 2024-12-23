@@ -5,9 +5,13 @@ from typing import List
 from typing import Optional, Self
 from util.art import *
 from util.game import *
+from util.io import *
 from util.steam import *
 
 class Library:
+    __RANGE_DELIMETER_REGEX = re.compile(r'\s*,\s*')
+    __RANGE_REGEX = re.compile(r'^(\d+)\s*\-\s*(\d+)|(\d+)$')
+
     def __init__(self, games: Optional[List[Game]] = None, exclusions: Optional[List[Game]] = None):
         self.games = [] if games is None else games
         self.exclusions = [] if exclusions is None else exclusions
@@ -60,9 +64,53 @@ class Library:
         Library.print_game_list(self.exclusions)
 
     @staticmethod
-    def print_game_list(game_list: List[Game]):
-        for index, game in enumerate(game_list):
+    def print_game_list(games: List[Game]):
+        for index, game in enumerate(games):
             print(f"{index + 1}.\t{game}")
+
+    @staticmethod
+    def select_games(initial_prompt: str, confirmation_prompt: str, games: List[Game]) -> List[Game]:
+        Library.print_game_list(games)
+
+        game_indices = {}
+        raw_input = input(initial_prompt).strip()
+        for range_str in Library.__RANGE_DELIMETER_REGEX.split(raw_input):
+            range_match = Library.__RANGE_REGEX.match(range_str)
+            if not range_match:
+                print(f"Error: Input '{range_str}' is not a valid numeric range")
+                newline()
+                return []
+
+            if range_match.group(3):
+                idx = int(range_match.group(3))
+                if idx < 1 or idx > len(games):
+                    print(f"Error: Game number {idx} does not exist.")
+                    newline()
+                    return []
+
+                game_indices[idx] = True
+            else:
+                lower = int(range_match.group(1))
+                upper = int(range_match.group(2))
+
+                if upper < lower:
+                    print(f"Error: Range '{range_str}' has upper bound greater than lower bound")
+                    newline()
+                    return []
+
+                for idx in range(lower, upper + 1):
+                    if idx < 1 or idx > len(games):
+                        print(f"Error: Game number {idx} does not exist.")
+                        newline()
+                        return []
+                    game_indices[idx] = True
+
+        selected_games = [games[idx - 1] for idx in sorted(game_indices.keys())]
+        print(f"You selected the following {len(selected_games)} games:")
+        Library.print_game_list(selected_games)
+        if not yes_or_no(confirmation_prompt):
+            return []
+        return selected_games
 
     def sync_library_with_steam(self):
         update_count = 0
@@ -94,12 +142,7 @@ class Library:
         # Remove games from library if they weren't found in Steam
         for game in self.games:
             if not game in new_games:
-                print('')
-                choice = ''
-                while choice != 'y' and choice != 'n':
-                    choice = input(f"Library contains {game}, but couldn't find it in Steam library. Do you want to remove it? (y/n): ")
-                print('')
-                if choice == 'y':
+                if yes_or_no(f"Library contains {game}, but couldn't find it in Steam library. Do you want to remove it?"):
                     self.remove_game(game, skip_exclusion=True)
                     remove_count += 1
                     print(f"Removed game {game} from library.")
@@ -112,12 +155,7 @@ class Library:
         # tradeoff to prevent stale entries in the exclusion list.
         for game in self.exclusions:
             if not game in new_games:
-                print('')
-                choice = ''
-                while choice != 'y' and choice != 'n':
-                    choice = input(f"Library contains exclusion for {game}, but couldn't find it in Steam library. Do you want to remove it? (y/n): ")
-                print('')
-                if choice == 'y':
+                if  yes_or_no(f"Library contains exclusion for {game}, but couldn't find it in Steam library. Do you want to remove it?"):
                     self.purge_exclusion(game)
                     purge_count += 1
                     print(f"Purged game {game} from exclusions.")
@@ -125,7 +163,7 @@ class Library:
                     print(f"Did not purge game {game} from exclusions.")
 
         self._sort_games()
-        print('')
+        newline()
         print(f"Added {add_count} games, updated {update_count} games, removed {remove_count} games, and purged {purge_count} exclusions based on Steam library.")
 
     def to_file(self, file_path: Path):

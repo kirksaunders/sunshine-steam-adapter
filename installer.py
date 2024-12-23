@@ -1,7 +1,7 @@
 import json
 import traceback
 from pathlib import Path
-from typing import List
+from util.io import *
 from util.library import *
 from util.steam import *
 
@@ -15,115 +15,54 @@ STATIC_ART_DIR = SCRIPT_DIR / "static-artwork"
 DEFAULT_SHORTCUT_DIR = SCRIPT_DIR / 'shortcuts'
 DEFAULT_SUNSHINE_CONFIG_PATH = Path(r'C:\Program Files\Sunshine\config\apps.json')
 
-RANGE_DELIMETER_REGEX = re.compile(r'\s*,\s*')
-RANGE_REGEX = re.compile(r'^(\d+)\s*\-\s*(\d+)|(\d+)$')
-
-_ORIG_INPUT = input
-
-# We always want to go to a new line before and after receiving input
-def input(prompt: str) -> str:
-    print('')
-    result = _ORIG_INPUT(prompt)
-    print('')
-    return result
-
-def select_games(initial_prompt: str, confirmation_prompt: str, games: List[Game]) -> List[Game]:
-    Library.print_game_list(games)
-
-    game_indices = {}
-    raw_input = input(initial_prompt).strip()
-    for range_str in RANGE_DELIMETER_REGEX.split(raw_input):
-        range_match = RANGE_REGEX.match(range_str)
-        if not range_match:
-            print(f"Error: Input '{range_str}' is not a valid numeric range")
-            print('')
-            return []
-
-        if range_match.group(3):
-            idx = int(range_match.group(3))
-            if idx < 1 or idx > len(games):
-                print(f"Error: Game number {idx} does not exist.")
-                print('')
-                return []
-
-            game_indices[idx] = True
-        else:
-            lower = int(range_match.group(1))
-            upper = int(range_match.group(2))
-
-            if upper < lower:
-                print(f"Error: Range '{range_str}' has upper bound greater than lower bound")
-                print('')
-                return []
-
-            for idx in range(lower, upper + 1):
-                if idx < 1 or idx > len(games):
-                    print(f"Error: Game number {idx} does not exist.")
-                    print('')
-                    return []
-                game_indices[idx] = True
-
-    selected_games = [games[idx - 1] for idx in sorted(game_indices.keys())]
-    print(f"You selected the following {len(selected_games)} games:")
-    Library.print_game_list(selected_games)
-    choice = ''
-    while choice != 'y' and choice != 'n':
-        choice = input(f"{confirmation_prompt} (y/n): ")
-    if choice == 'n':
-        return []
-    return selected_games
-
 def configure_non_steam_game(library: Library):
     print(f"There are currently {len(library.get_non_steam_games())} non-steam games in your library:")
-    games = select_games('Input the number of the game(s) to add: ',
-                         "Are you sure you'd like to configure the above games?",
-                         library.get_non_steam_games())
-    print(f"Will configure {len(games)} non-steam games.")
+    games = Library.select_games('Input the number of the game(s) to add: ',
+                                 "Are you sure you'd like to configure the above games?",
+                                 library.get_non_steam_games())
     for game in games:
-        print('')
         print(f"Configuring {game}...")
         process_name = input(f"Input the process name to track run status (press enter to keep current value of {game.process_name}): ")
         if process_name != '':
             game.process_name = process_name
         library.to_file(LIBRARY_CACHE)
         print(f"Successfully configured {game}.")
+        newline()
+    print(f"Configured {len(games)} non-steam games.")
 
 def remove_game(library: Library):
     print(f"There are currently {len(library.get_games())} games in your library:")
-    games = select_games('Input the number of the game(s) to remove: ',
-                         "Are you sure you'd like to remove the above games?",
-                         library.get_games())
-    print(f"Will remove {len(games)} games.")
+    games = Library.select_games('Input the number of the game(s) to remove: ',
+                                 "Are you sure you'd like to remove the above games?",
+                                 library.get_games())
     for game in games:
         library.remove_game(game)
         library.to_file(LIBRARY_CACHE)
         print(f"Removed {game} from library.")
+    newline()
+    print(f"Removed {len(games)} games.")
 
 def remove_exclusion(library: Library):
     print(f"There are currently {len(library.get_exclusions())} games previously removed from the library:")
-    games = select_games('Input the number of the game(s) to return to your library: ',
-                         "Are you sure you'd like to return the above games to your library?",
-                         library.get_exclusions())
-    print(f"Will return {len(games)} games to your library.")
+    games = Library.select_games('Input the number of the game(s) to return to your library: ',
+                                 "Are you sure you'd like to return the above games to your library?",
+                                 library.get_exclusions())
     for game in games:
         library.remove_exclusion(game)
         library.to_file(LIBRARY_CACHE)
         print(f"Added {game} back to library.")
+    newline()
+    print(f"Returned {len(games)} games to your library.")
 
 def configure_game_settings_sync(library: Library):
     print(f"There are currently {len(library.get_games())} games in your library:")
-    games = select_games('Input the number of the game(s) to configure settings sync for: ',
-                         "Are you sure you'd like to configure settings sync for the above games?",
-                         library.get_games())
-    print(f"Will configure settings sync for {len(games)} games.")
+    games = Library.select_games('Input the number of the game(s) to configure settings sync for: ',
+                                 "Are you sure you'd like to configure settings sync for the above games?",
+                                 library.get_games())
     for game in games:
-        print('')
         print(f"Configuring settings sync for {game}...")
         if game.settings_path:
-            choice = ''
-            while choice != 'y' and choice != 'n':
-                choice = input(f"Settings sync already enabled for {game} with settings file {game.settings_path}. Would you like to disable it? (y/n): ")
-            if choice == 'y':
+            if yes_or_no(f"Settings sync already enabled for {game} with settings file {game.settings_path}. Would you like to disable it?"):
                 game.settings_path = None
                 library.to_file(LIBRARY_CACHE)
                 print(f"Disabled settings sync for {game}.")
@@ -137,6 +76,8 @@ def configure_game_settings_sync(library: Library):
         game.settings_path = settings_path.resolve()
         library.to_file(LIBRARY_CACHE)
         print(f"Enabled settings sync for {game} with settings file {game.settings_path}.")
+        newline()
+    print(f"Configured settings sync for {len(games)} games.")
 
 def write_shortcuts(library: Library):
     dir = Path(input(f"Input the directory to save the shortcuts to (press enter to use the default of {DEFAULT_SHORTCUT_DIR}): ") or DEFAULT_SHORTCUT_DIR).resolve()
@@ -144,7 +85,7 @@ def write_shortcuts(library: Library):
     dir.mkdir(parents=True, exist_ok=True)
     print('Creating shortcuts...')
     library.write_shortcuts(dir, LAUNCHER_PATH)
-    print('')
+    newline()
     print(f"Created shortcuts in {dir}.")
 
 def write_batch_shortcuts(library: Library):
@@ -153,23 +94,20 @@ def write_batch_shortcuts(library: Library):
     dir.mkdir(parents=True, exist_ok=True)
     print('Creating batch shortcuts...')
     library.write_batch_shortcuts(dir, LAUNCHER_PATH)
-    print('')
+    newline()
     print(f"Created batch shortcuts in {dir}.")
 
 def write_sunshine_config(library: Library):
     path = Path(input(f"Input the path to write the config to (press enter to use the default of {DEFAULT_SUNSHINE_CONFIG_PATH}): ") or DEFAULT_SUNSHINE_CONFIG_PATH).resolve()
     if path.is_file():
-        choice = ''
-        while choice != 'y' and choice != 'n':
-            choice = input(f"Config file {path} already exists. Do you want to overwrite it? (y/n): ")
-        if choice == 'n':
+        if not yes_or_no(f"Config file {path} already exists. Do you want to overwrite it?"):
             print('Did not write Sunshine config.')
             return
     print('Writing Sunshine config...')
     json_dict = library.to_sunshine_config_json_dict(LAUNCHER_PATH, TEARDOWN_PATH, SETTINGS_SYNC_PATH, STATIC_ART_DIR, ART_CACHE_DIR)
     with path.open(mode='w', encoding='utf-8') as file:
         json.dump(json_dict, file, ensure_ascii=False, indent=4)
-    print('')
+    newline()
     print(f"Saved Sunshine config to {path}. You may need to restart Sunshine for the changes to go into effect.")
 
 def print_menu():
@@ -193,10 +131,10 @@ if __name__ == '__main__':
     print("Syncing library with Steam games...")
     library.sync_library_with_steam()
     library.to_file(LIBRARY_CACHE)
-    print('Synced library. New non-steam games must be added manually.')
+    newline()
 
     while True:
-        print('')
+        newline()
         print_menu()
         choice = int(input('Please select a menu action (number): '))
         if choice == 1:
@@ -213,19 +151,19 @@ if __name__ == '__main__':
             try:
                 write_shortcuts(library)
             except BaseException as e:
-                print('')
+                newline()
                 print(f"Failed to write shortcuts. Error was: {traceback.format_exc()}")
         elif choice == 7:
             try:
                 write_batch_shortcuts(library)
             except BaseException as e:
-                print('')
+                newline()
                 print(f"Failed to write batch shortcuts. Error was: {traceback.format_exc()}")
         elif choice == 8:
             try:
                 write_sunshine_config(library)
             except BaseException as e:
-                print('')
+                newline()
                 print(f"Failed to write Sunshine config. Error was: {traceback.format_exc()}")
         elif choice == 9:
             exit(0)
