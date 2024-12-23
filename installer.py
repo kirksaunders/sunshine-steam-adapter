@@ -1,19 +1,19 @@
 import json
-import os
 import traceback
+from pathlib import Path
 from typing import List
 from util.library import *
 from util.steam import *
 
-SCRIPT_DIR = os.path.abspath(os.path.dirname(__file__))
-LAUNCHER_PATH = os.path.join(SCRIPT_DIR, 'launcher.py')
-TEARDOWN_PATH = os.path.join(SCRIPT_DIR, 'teardown.py')
-SETTINGS_SYNC_PATH = os.path.join(SCRIPT_DIR, 'settings-sync.py')
-LIBRARY_CACHE = os.path.join(SCRIPT_DIR, ".library-cache")
-ART_CACHE_DIR = os.path.join(SCRIPT_DIR, ".converted-artwork-cache")
-STATIC_ART_DIR = os.path.join(SCRIPT_DIR, "static-artwork")
-DEFAULT_SUNSHINE_CONFIG_PATH = r'C:\Program Files\Sunshine\config\apps.json'
-DEFAULT_SHORTCUT_DIR = os.path.join(SCRIPT_DIR, 'shortcuts')
+SCRIPT_DIR = Path(__file__).parent
+LAUNCHER_PATH = SCRIPT_DIR / 'launcher.py'
+TEARDOWN_PATH = SCRIPT_DIR / 'teardown.py'
+SETTINGS_SYNC_PATH = SCRIPT_DIR / 'settings-sync.py'
+LIBRARY_CACHE = SCRIPT_DIR / ".library-cache"
+ART_CACHE_DIR = SCRIPT_DIR / ".converted-artwork-cache"
+STATIC_ART_DIR = SCRIPT_DIR / "static-artwork"
+DEFAULT_SHORTCUT_DIR = SCRIPT_DIR / 'shortcuts'
+DEFAULT_SUNSHINE_CONFIG_PATH = Path(r'C:\Program Files\Sunshine\config\apps.json')
 
 RANGE_DELIMETER_REGEX = re.compile(r'\s*,\s*')
 RANGE_REGEX = re.compile(r'^(\d+)\s*\-\s*(\d+)|(\d+)$')
@@ -129,44 +129,36 @@ def configure_game_settings_sync(library: Library):
                 print(f"Disabled settings sync for {game}.")
                 continue
 
-        settings_path = input(f"Input the path to the game's settings file{f' ({game.settings_path})' if game.settings_path else ''}: ")
-        settings_path = game.settings_path if game.settings_path and settings_path == '' else settings_path
-        if not os.path.isfile(settings_path):
+        settings_path_input = input(f"Input the path to the game's settings file{f' ({game.settings_path})' if game.settings_path else ''}: ")
+        settings_path = Path(game.settings_path if game.settings_path and settings_path_input == '' else settings_path_input)
+        if not settings_path.is_file():
             print(f"Error: No file {settings_path} exists.")
             return
-        game.settings_path = os.path.abspath(settings_path)
+        game.settings_path = settings_path.resolve()
         library.to_file(LIBRARY_CACHE)
         print(f"Enabled settings sync for {game} with settings file {game.settings_path}.")
 
 def write_shortcuts(library: Library):
-    dir = input(f"Input the directory to save the shortcuts to (press enter to use the default of {DEFAULT_SHORTCUT_DIR}): ")
-    if dir == '':
-        dir = DEFAULT_SHORTCUT_DIR
+    dir = Path(input(f"Input the directory to save the shortcuts to (press enter to use the default of {DEFAULT_SHORTCUT_DIR}): ") or DEFAULT_SHORTCUT_DIR).resolve()
     # Create directory if it doesn't exist
-    if not os.path.isdir(dir):
-        os.makedirs(dir)
+    dir.mkdir(parents=True, exist_ok=True)
     print('Creating shortcuts...')
     library.write_shortcuts(dir, LAUNCHER_PATH)
     print('')
     print(f"Created shortcuts in {dir}.")
 
 def write_batch_shortcuts(library: Library):
-    dir = input(f"Input the directory to save the batch shortcuts to (press enter to use the default of {DEFAULT_SHORTCUT_DIR}): ")
-    if dir == '':
-        dir = DEFAULT_SHORTCUT_DIR
+    dir = Path(input(f"Input the directory to save the batch shortcuts to (press enter to use the default of {DEFAULT_SHORTCUT_DIR}): ") or DEFAULT_SHORTCUT_DIR).resolve()
     # Create directory if it doesn't exist
-    if not os.path.isdir(dir):
-        os.makedirs(dir)
+    dir.mkdir(parents=True, exist_ok=True)
     print('Creating batch shortcuts...')
     library.write_batch_shortcuts(dir, LAUNCHER_PATH)
     print('')
     print(f"Created batch shortcuts in {dir}.")
 
 def write_sunshine_config(library: Library):
-    path = input(f"Input the path to write the config to (press enter to use the default of {DEFAULT_SUNSHINE_CONFIG_PATH}): ")
-    if path == '':
-        path = DEFAULT_SUNSHINE_CONFIG_PATH
-    if os.path.isfile(path):
+    path = Path(input(f"Input the path to write the config to (press enter to use the default of {DEFAULT_SUNSHINE_CONFIG_PATH}): ") or DEFAULT_SUNSHINE_CONFIG_PATH).resolve()
+    if path.is_file():
         choice = ''
         while choice != 'y' and choice != 'n':
             choice = input(f"Config file {path} already exists. Do you want to overwrite it? (y/n): ")
@@ -175,7 +167,7 @@ def write_sunshine_config(library: Library):
             return
     print('Writing Sunshine config...')
     json_dict = library.to_sunshine_config_json_dict(LAUNCHER_PATH, TEARDOWN_PATH, SETTINGS_SYNC_PATH, STATIC_ART_DIR, ART_CACHE_DIR)
-    with open(path, 'w', encoding='utf-8') as file:
+    with path.open(mode='w', encoding='utf-8') as file:
         json.dump(json_dict, file, ensure_ascii=False, indent=4)
     print('')
     print(f"Saved Sunshine config to {path}. You may need to restart Sunshine for the changes to go into effect.")

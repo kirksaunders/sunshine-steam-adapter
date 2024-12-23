@@ -1,14 +1,12 @@
-import os
 import traceback
 from datetime import datetime
+from pathlib import Path
 
 class Logger:
-    def __init__(self, log_file_path: str):
-        dir_path = os.path.dirname(log_file_path)
-        if not os.path.isdir(dir_path):
-            os.makedirs(dir_path)
-
-        self.file = open(log_file_path, 'a')
+    def __init__(self, log_file_path: Path):
+        dir_path = log_file_path.parent
+        dir_path.mkdir(parents=True, exist_ok=True)
+        self.file = log_file_path.open(mode='a')
 
     def log(self, *args):
         print(f"{datetime.now()}:", *args, file=self.file)

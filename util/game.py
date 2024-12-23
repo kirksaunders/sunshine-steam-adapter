@@ -1,11 +1,10 @@
-import glob
-import os
 import re
+from pathlib import Path
 from typing import Optional, Self
 from util.art import *
 
 class Game:
-    def __init__(self, id: str, name: str, alt_id: Optional[str] = None, process_name: Optional[str] = None, settings_path: Optional[str] = None):
+    def __init__(self, id: str, name: str, alt_id: Optional[str] = None, process_name: Optional[str] = None, settings_path: Optional[Path] = None):
         self.id = id
         self.name = name
         if alt_id:
@@ -61,35 +60,35 @@ class Game:
         if self.process_name:
             j['process_name'] = self.process_name
         if self.settings_path:
-            j['settings_path'] = self.settings_path
+            j['settings_path'] = str(self.settings_path)
         return j
 
     @classmethod
     def from_json_dict(cls, j) -> Self:
         return cls(id=j.get('id'), name=j.get('name'), alt_id=j.get('alt_id'), process_name=j.get('process_name'), settings_path=j.get('settings_path'))
 
-    def get_cover_art_path(self, steam_config_path: str, art_cache_dir_path: str) -> str:
+    def get_cover_art_path(self, steam_config_path: Path, art_cache_dir_path: Path) -> Path | None:
         app_id = self.alt_id or self.id
 
         # First look in grid (custom artwork)
-        matches = glob.glob(os.path.join(steam_config_path, f"grid/{app_id}p.*"))
+        matches = list((steam_config_path / 'grid').glob(f"{app_id}p.*"))
         if len(matches) > 0:
             assert len(matches) == 1
             match = matches[0]
-            if os.path.splitext(match)[1] == '.png':
+            if match.suffix == '.png':
                 return match
             else:
                 return convert_to_png(match, art_cache_dir_path)
 
         # Then look in librarycache
-        matches = glob.glob(os.path.abspath(os.path.join(steam_config_path, f"../../../appcache/librarycache/{app_id}_library_600x900.*")))
+        matches = list((steam_config_path.parents[2] / 'appcache' / 'librarycache').glob(f"{app_id}_library_600x900.*"))
         if len(matches) > 0:
             assert len(matches) == 1
             match = matches[0]
-            if os.path.splitext(match)[1] == '.png':
+            if match.suffix == '.png':
                 return match
             else:
                 return convert_to_png(match, art_cache_dir_path)
 
-        # Just return empty string if we can't find anything
-        return ''
+        # Just return None if we can't find anything
+        return None

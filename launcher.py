@@ -1,15 +1,15 @@
 import argparse
-import os
 import subprocess
 import time
 import win32com.client, win32gui
 import winreg
+from pathlib import Path
 from typing import Callable, Optional
 from util.log import *
 from util.steam import *
 
-SCRIPT_DIR = os.path.abspath(os.path.dirname(__file__))
-LOG = Logger(os.path.join(SCRIPT_DIR, 'logs', 'launcher-log.txt'))
+SCRIPT_DIR = Path(__file__).parent
+LOG = Logger(SCRIPT_DIR / 'logs' / 'launcher-log.txt')
 
 def get_running_processes():
     WMI = win32com.client.GetObject('winmgmts:')
@@ -41,10 +41,10 @@ def launch_game_and_wait_for_close(game_id: Optional[int] = None, process_name: 
 
     with winreg.OpenKeyEx(winreg.HKEY_CURRENT_USER, r'SOFTWARE\Valve\Steam', 0, winreg.KEY_READ) as key:
         # Get steam executable path
-        steam_path = read_reg_value(key, 'SteamExe')
+        steam_path = Path(read_reg_value(key, 'SteamExe'))
 
         # Launch steam if it's not already running
-        if not os.path.basename(steam_path) in get_running_processes():
+        if not steam_path.name in get_running_processes():
             LOG.log("Launching Steam, since it was not already running")
             subprocess.Popen(steam_path)
 

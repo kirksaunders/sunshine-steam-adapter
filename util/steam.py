@@ -1,4 +1,3 @@
-import os
 import re
 import win32con, win32gui
 import winreg
@@ -123,7 +122,7 @@ def get_non_steam_games() -> List[Game]:
         id = get_app_id_from_alt_id(alt_id)
         name = game_match[1].decode('utf-8')
         target = game_match[2].decode('utf-8')
-        target_process = os.path.basename(re.sub(r'^"|"$', '', target))
+        target_process = Path(re.sub(r'^"|"$', '', target)).name
         games.append(Game(id=str(id), name=name, alt_id=str(id), process_name=target_process))
 
     return games

@@ -128,15 +128,15 @@ class Library:
         print('')
         print(f"Added {add_count} games, updated {update_count} games, removed {remove_count} games, and purged {purge_count} exclusions based on Steam library.")
 
-    def to_file(self, file_path: str):
-        with open(file_path, mode='w', encoding='utf8') as file:
+    def to_file(self, file_path: Path):
+        with file_path.open(mode='w', encoding='utf8') as file:
             json.dump(self.to_json_dict(), file, ensure_ascii=False, indent=4)
 
     @classmethod
-    def from_file(cls, file_path: str) -> Self:
-        if not os.path.isfile(file_path):
+    def from_file(cls, file_path: Path) -> Self:
+        if not file_path.is_file():
             return cls()
-        with open(file_path, mode='r', encoding='utf8') as file:
+        with file_path.open(mode='r', encoding='utf8') as file:
             return cls.from_json_dict(json.load(file))
 
     def to_json_dict(self) -> dict:
@@ -154,8 +154,8 @@ class Library:
         library = cls(games=games, exclusions=exclusions)
         return library
 
-    def to_sunshine_config_json_dict(self, launcher_path: str, teardown_path: str, settings_sync_path: str, static_art_dir: str, art_cache_dir: str) -> dict:
-        pythonw_path = os.path.join(os.path.abspath(os.path.dirname(sys.executable)), 'pythonw.exe')
+    def to_sunshine_config_json_dict(self, launcher_path: Path, teardown_path: Path, settings_sync_path: Path, static_art_dir: Path, art_cache_dir: Path) -> dict:
+        pythonw_path = Path(sys.executable).parent.resolve() / 'pythonw.exe'
         config: dict = {
             'env': {
                 'PATH': "$(PATH);$(ProgramFiles(x86))\\Steam"
@@ -176,7 +176,7 @@ class Library:
                         'elevated': 'false'
                     }
                 ],
-                'image-path': os.path.join(static_art_dir, 'steam-big-picture.png')
+                'image-path': str(static_art_dir / 'steam-big-picture.png')
             },
         ]
         config['apps'] = apps
@@ -200,14 +200,14 @@ class Library:
                 'name': game.name,
                 'cmd': f"{pythonw_path} {launcher_path} {game.launcher_args()}",
                 'prep-cmd': prep_cmds,
-                'image-path': game.get_cover_art_path(STEAM_CONFIG_PATH, art_cache_dir),
+                'image-path': str(game.get_cover_art_path(STEAM_CONFIG_PATH, art_cache_dir) or ''),
             })
         return config
 
-    def write_shortcuts(self, shortcut_dir: str, launcher_path: str):
+    def write_shortcuts(self, shortcut_dir: Path, launcher_path: Path):
         for game in self.games:
             shell = win32com.client.Dispatch("WScript.Shell")
-            shortcut = shell.CreateShortCut(os.path.join(shortcut_dir, f"{game.sanitized_name()}.lnk"))
+            shortcut = shell.CreateShortCut(str(shortcut_dir / f"{game.sanitized_name()}.lnk"))
             shortcut.Targetpath = str(launcher_path)
             shortcut.Arguments = game.launcher_args()
             # TODO: Write icons
@@ -215,9 +215,9 @@ class Library:
             shortcut.WindowStyle = 1 # 7 - Minimized, 3 - Maximized, 1 - Normal
             shortcut.save()
 
-    def write_batch_shortcuts(self, shortcut_dir: str, launcher_path: str):
+    def write_batch_shortcuts(self, shortcut_dir: Path, launcher_path: Path):
         for game in self.games:
-            with open(os.path.join(shortcut_dir, f"{game.sanitized_name()}.bat"), 'w') as file:
+            with (shortcut_dir / f"{game.sanitized_name()}.bat").open(mode='w') as file:
                 file.write(f"\"{launcher_path}\" {game.launcher_args()}\n")
 
     def _sort_games(self):

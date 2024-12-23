@@ -3,53 +3,50 @@ import os
 import shutil
 from util.log import *
 
-SCRIPT_DIR = os.path.abspath(os.path.dirname(__file__))
-SETTINGS_CACHE = os.path.join(SCRIPT_DIR, ".settings-cache")
-LOG = Logger(os.path.join(SCRIPT_DIR, 'logs', 'settings-sync-log.txt'))
+SCRIPT_DIR = Path(__file__).parent
+SETTINGS_CACHE = SCRIPT_DIR / ".settings-cache"
+LOG = Logger(SCRIPT_DIR / 'logs' / 'settings-sync-log.txt')
 
-def backup_settings(settings_path: str):
-    backup_path = settings_path + '.bak'
+def backup_settings(settings_path: Path):
+    backup_path = settings_path.with_suffix(settings_path.suffix + '.bak')
     LOG.log(f"Backing up game's settings file to {backup_path}")
     shutil.copy2(settings_path, backup_path)
-    if not os.path.isfile(backup_path):
+    if not backup_path.is_file():
         raise RuntimeError('Could not find settings backup after doing copy')
     LOG.log('Successfully backed up game\'s settings file')
 
-def restore_backup_settings(settings_path: str):
-    backup_path = settings_path + '.bak'
+def restore_backup_settings(settings_path: Path):
+    backup_path = settings_path.with_suffix(settings_path.suffix + '.bak')
     LOG.log(f"Restoring game's backup settings file at {backup_path}")
-    if not os.path.isfile(backup_path):
+    if not backup_path.is_file():
         LOG.log("No settings backup file found. Nothing to do")
         return
     shutil.copy2(backup_path, settings_path)
     LOG.log('Successfully restored game\'s backup settings file')
 
-def delete_backup_settings(settings_path: str):
-    backup_path = settings_path + '.bak'
+def delete_backup_settings(settings_path: Path):
+    backup_path = settings_path.with_suffix(settings_path.suffix + '.bak')
     LOG.log(f"Deleting game's backup settings file at {backup_path}.")
-    if not os.path.isfile(backup_path):
+    if not backup_path.is_file():
         LOG.log("No settings backup file found. Nothing to do")
         return
-    os.remove(backup_path)
+    backup_path.unlink()
     LOG.log('Successfully deleted game\'s backup settings file')
 
-def get_save_path(game_id: str, client_id: str, settings_path: str) -> str:
-    settings_file_name = os.path.basename(settings_path)
-    return os.path.join(SETTINGS_CACHE, game_id, client_id, settings_file_name)
+def get_save_path(game_id: str, client_id: str, settings_path: Path) -> Path:
+    return SETTINGS_CACHE / game_id / client_id / settings_path.name
 
-def save_settings(game_id: str, client_id: str, settings_path: str):
+def save_settings(game_id: str, client_id: str, settings_path: Path):
     save_path = get_save_path(game_id, client_id, settings_path)
-    save_dir = os.path.dirname(save_path)
     LOG.log(f"Saving game's settings file to {save_path}")
-    if not os.path.isdir(save_dir):
-        os.makedirs(save_dir)
+    save_path.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(settings_path, save_path)
     LOG.log("Saved settings for game")
 
-def load_settings(game_id: str, client_id: str, settings_path: str):
+def load_settings(game_id: str, client_id: str, settings_path: Path):
     save_path = get_save_path(game_id, client_id, settings_path)
     LOG.log(f"Loading game's settings file from {save_path}")
-    if not os.path.isfile(save_path):
+    if not save_path.is_file():
         LOG.log("No saved settings file found. Nothing to do")
         return
     shutil.copy2(save_path, settings_path)
@@ -80,7 +77,7 @@ def main():
         description='This is a tool used to synchronize game settings based on client resolution. Any changes made during a stream are restored the next time you stream.'
     )
     parser.add_argument('-g', '--game_id', type=str, required=True, help='The game id to sync settings for.')
-    parser.add_argument('-s', '--settings_path', type=str, required=True, help='The path to the game\'s settings file.')
+    parser.add_argument('-s', '--settings_path', type=Path, required=True, help='The path to the game\'s settings file.')
     subparsers = parser.add_subparsers(required=True, help='What action to take.')
 
     load_parser = subparsers.add_parser('load', help='Load the saved settings file for the client.')

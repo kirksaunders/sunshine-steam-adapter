@@ -7,8 +7,8 @@ import winreg
 from util.log import *
 from util.steam import *
 
-SCRIPT_DIR = os.path.abspath(os.path.dirname(__file__))
-LOG = Logger(os.path.join(SCRIPT_DIR, 'logs', 'teardown-log.txt'))
+SCRIPT_DIR = Path(__file__).parent
+LOG = Logger(SCRIPT_DIR / 'logs' / 'teardown-log.txt')
 
 def terminate_recursive(pid: int):
     wmi = win32com.client.GetObject('winmgmts:')
