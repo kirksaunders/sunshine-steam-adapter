@@ -48,7 +48,7 @@ def normal_handler():
     LOG.log("Closed Steam big picture mode")
 
     def is_steam_window_visible():
-        handle = win32gui.FindWindow('SDL_app', 'Steam')
+        handle = get_steam_window()
         return handle != 0 and win32gui.IsWindowVisible(handle)
 
     # Wait for Steam regular window to open. At most wait for 10 seconds
@@ -60,9 +60,9 @@ def normal_handler():
     # Close Steam regular window. Unfortunately haven't found a better way to do this. Steam seems to try opening the window multiple times
     LOG.log("Attempting to close regular Steam window")
     is_closed_count = 0
-    # Require the window to report as closed twice in a row before we quit. But just give up after 5 seconds
+    # Require the window to report as closed 8 times in a row before we quit. But just give up after 10 seconds
     start_time = time.perf_counter()
-    while is_closed_count < 2 and time.perf_counter() - start_time < 5:
+    while is_closed_count < 8 and time.perf_counter() - start_time < 10:
         if not is_steam_window_visible():
             is_closed_count += 1
         else:
