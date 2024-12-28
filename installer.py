@@ -6,6 +6,7 @@ from util.library import *
 from util.steam import *
 
 SCRIPT_DIR = Path(__file__).parent
+PRE_LAUNCHER_PATH = SCRIPT_DIR / 'pre-launcher.py'
 LAUNCHER_PATH = SCRIPT_DIR / 'launcher.py'
 TEARDOWN_PATH = SCRIPT_DIR / 'teardown.py'
 SETTINGS_SYNC_PATH = SCRIPT_DIR / 'settings-sync.py'
@@ -104,7 +105,7 @@ def write_sunshine_config(library: Library):
             print('Did not write Sunshine config.')
             return
     print('Writing Sunshine config...')
-    json_dict = library.to_sunshine_config_json_dict(LAUNCHER_PATH, TEARDOWN_PATH, SETTINGS_SYNC_PATH, STATIC_ART_DIR, ART_CACHE_DIR)
+    json_dict = library.to_sunshine_config_json_dict(PRE_LAUNCHER_PATH, LAUNCHER_PATH, TEARDOWN_PATH, SETTINGS_SYNC_PATH, STATIC_ART_DIR, ART_CACHE_DIR)
     with path.open(mode='w', encoding='utf-8') as file:
         json.dump(json_dict, file, ensure_ascii=False, indent=4)
     newline()

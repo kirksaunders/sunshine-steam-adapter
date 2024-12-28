@@ -76,8 +76,7 @@ def normal_handler():
 def detached_handler():
     LOG.log('Teardown script running in detached mode')
     # Spawn background process to close regular Steam window. This will avoid us blocking stream shutdown
-    detached_flags = 0x00000008
-    subprocess.Popen([sys.executable, __file__, 'normal'], creationflags=detached_flags)
+    subprocess.Popen([sys.executable, __file__, 'normal'], creationflags=win32process.DETACHED_PROCESS)
     LOG.log('Spawned background process to do actual teardown')
 
 def main():

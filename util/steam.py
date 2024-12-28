@@ -13,6 +13,10 @@ def get_steam_install_path() -> Path:
     with winreg.OpenKeyEx(winreg.HKEY_CURRENT_USER, r'SOFTWARE\Valve\Steam', 0, winreg.KEY_READ) as key:
         return Path(read_reg_value(key, 'SteamPath'))
 
+def get_steam_exe_path() -> Path:
+    with winreg.OpenKeyEx(winreg.HKEY_CURRENT_USER, r'SOFTWARE\Valve\Steam', 0, winreg.KEY_READ) as key:
+        return Path(read_reg_value(key, 'SteamExe'))
+
 def get_localization_entry(key: str) -> str | None:
     language = get_steam_language()
     localization_file_path = get_steam_install_path() / "steamui" / "localization" / f"steamui_{language}-json.js"

@@ -192,12 +192,15 @@ class Library:
         library = cls(games=games, exclusions=exclusions)
         return library
 
-    def to_sunshine_config_json_dict(self, launcher_path: Path, teardown_path: Path, settings_sync_path: Path, static_art_dir: Path, art_cache_dir: Path) -> dict:
+    def to_sunshine_config_json_dict(self, pre_launcher_path: Path, launcher_path: Path, teardown_path: Path, settings_sync_path: Path, static_art_dir: Path, art_cache_dir: Path) -> dict:
         pythonw_path = Path(sys.executable).parent.resolve() / 'pythonw.exe'
         config: dict = {
             'env': {
                 'PATH': "$(PATH);$(ProgramFiles(x86))\\Steam"
             },
+        }
+        common_options: dict = {
+            'auto-detach': 'false'
         }
         apps = [
             {
@@ -209,12 +212,13 @@ class Library:
                 'cmd': f"{pythonw_path} {launcher_path}",
                 'prep-cmd': [
                     {
-                        'do': '',
+                        'do': f"{pythonw_path} {pre_launcher_path}",
                         'undo': f"{pythonw_path} {teardown_path} detached",
                         'elevated': 'false'
                     }
                 ],
-                'image-path': str(static_art_dir / 'steam-big-picture.png')
+                'image-path': str(static_art_dir / 'steam-big-picture.png'),
+                **common_options
             },
         ]
         config['apps'] = apps
@@ -222,7 +226,7 @@ class Library:
         for game in self.games:
             prep_cmds = [
                 {
-                    'do': '',
+                    'do': f"{pythonw_path} {pre_launcher_path}",
                     'undo': f"{pythonw_path} {teardown_path} detached",
                     'elevated': 'false'
                 }
@@ -239,6 +243,7 @@ class Library:
                 'cmd': f"{pythonw_path} {launcher_path} {game.launcher_args()}",
                 'prep-cmd': prep_cmds,
                 'image-path': str(game.get_cover_art_path(STEAM_CONFIG_PATH, art_cache_dir) or ''),
+                **common_options
             })
         return config
 

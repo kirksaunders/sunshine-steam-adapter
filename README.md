@@ -45,9 +45,14 @@ Most users will only be interested in the installer script, which provides an in
 If you see `Game id=<game id> either doesn't have name, or installed flag. Skipping.` for a Steam game that you expect to be working, then try launching the game through Steam, letting it load, then quitting it. Afterwards, try running the installer script again. Steam doesn't write all registry keys until the game has been launched at least once.
 
 ## Launcher
-Advanced users may be interested in using the launcher script directly. This launcher is a wrapper around Steam's `steam://rungame/<app-id>` API. It will ensure the game is launched in big picture mode, and will block until the game terminates. It also supports non-steam games (although it requires an extra parameter to track when the game ends).
+Advanced users may be interested in using the launcher script directly. This launcher is a wrapper around Steam's `steam://rungame/<app-id>` API. It will launch the game, then block until the game terminates. It also supports non-steam games (although it requires an extra parameter to track when the game ends).
 
 For usage, run `python3 launcher.py --help`. You can also read the source of `launcher.py` (it's well-commented) to see what exactly it's doing.
+
+## Pre-Launcher
+Before the launcher is run, you likely want to run the pre-launcher script. This script will start steam if it's not already running, then open big picture mode.
+
+For usage, run `python3 pre-launcher.py --help`. Reading the source is also recommended.
 
 ## Teardown
 Similarly to the launcher script, there's a teardown script. This teardown script will ensure that the game is terminated after the stream ends. This is only relevant for Sunshine, since Nvidia Gamestream doesn't provide an ability to run scripts after the stream ends. It does this by killing all non-official child processes of Steam. Advanced users: read source of `teardown.py` for more details.

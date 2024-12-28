@@ -27,56 +27,26 @@ def wait_for_state_with_timeout(state_checker: Callable[[], bool], timeout: floa
         time.sleep(0.25)
 
 def launch_game_and_wait_for_close(game_id: Optional[int] = None, process_name: Optional[str] = None):
-    """Launch big picture mode, launch steam game by id, then wait for the game to quit.
+    """Launch steam game by id, then wait for the game to quit.
 
     By default, this will use Steam's registry keys to detect when the game quits. However, the registry key is
     not set for non-steam games. Therefore, you must supply the process_name argument when launching non-steam
     games. The process name will be used to detect once the non-steam game has quit running.
 
-    If you don't provide a game id, only big picture mode is launched. The stream ends once big picture mode is
-    closed.
+    If you don't provide a game id, the stream ends once big picture mode is closed.
     """
 
     LOG.log(f"Starting launcher with args game_id={game_id}, process_name={process_name}")
 
-    with winreg.OpenKeyEx(winreg.HKEY_CURRENT_USER, r'SOFTWARE\Valve\Steam', 0, winreg.KEY_READ) as key:
-        # Get steam executable path
-        steam_path = Path(read_reg_value(key, 'SteamExe'))
+    # Get steam executable path
+    steam_path = get_steam_exe_path()
 
-        # Launch steam if it's not already running
-        if not steam_path.name in get_running_processes():
-            LOG.log("Launching Steam, since it was not already running")
-            subprocess.Popen(steam_path)
+    if game_id:
+        # Launch game
+        LOG.log(f"Launching game with id={game_id}")
+        subprocess.run([steam_path, f"steam://rungameid/{game_id}"])
 
-            # Wait for steam window to show. That's how we know it has fully started
-            def is_steam_window_visible():
-                handle = win32gui.FindWindow('SDL_app', 'Steam')
-                return handle != 0 and win32gui.IsWindowVisible(handle)
-            wait_for_state_with_timeout(is_steam_window_visible, 15)
-            LOG.log("Started Steam")
-
-            # Give a little bit more buffer before starting big picture mode
-            time.sleep(0.5)
-
-        # Start big picture mode
-        LOG.log("Opening Steam big picture mode")
-        subprocess.run([steam_path, 'steam://open/bigpicture'])
-
-        # Wait for big picture mode to open
-        def is_big_picture_mode_open():
-            handle = get_big_picture_window()
-            return handle != 0 and win32gui.IsWindowVisible(handle)
-        wait_for_state_with_timeout(is_big_picture_mode_open, 15)
-        LOG.log("Opened Steam big picture mode")
-
-        # Give a little bit more buffer before starting the game
-        time.sleep(1)
-
-        if game_id:
-            # Launch game
-            LOG.log(f"Launching game with id={game_id}")
-            subprocess.run([steam_path, f"steam://rungameid/{game_id}"])
-
+        with winreg.OpenKeyEx(winreg.HKEY_CURRENT_USER, r'SOFTWARE\Valve\Steam', 0, winreg.KEY_READ) as key:
             def is_game_running() -> bool:
                 if process_name:
                     return process_name in get_running_processes()
@@ -93,20 +63,23 @@ def launch_game_and_wait_for_close(game_id: Optional[int] = None, process_name: 
                 time.sleep(0.25)
             LOG.log("Game has quit")
 
-            # Let teardown script handle closing Steam big picture. This is to prevent the stream from showing the desktop briefly
-        else:
-            # Wait for big picture mode to close
-            LOG.log("Waiting for Steam big picture mode to close")
-            while is_big_picture_mode_open():
-                time.sleep(0.25)
-            LOG.log("Steam big picture mode has closed, finishing up")
+        # Let teardown script handle closing Steam big picture. This is to prevent the stream from showing the desktop briefly
+    else:
+        # Wait for big picture mode to close
+        LOG.log("Waiting for Steam big picture mode to close")
+        def is_big_picture_mode_open():
+            handle = get_big_picture_window()
+            return handle != 0 and win32gui.IsWindowVisible(handle)
+        while is_big_picture_mode_open():
+            time.sleep(0.25)
+        LOG.log("Steam big picture mode has closed, finishing up")
 
 def main():
     parser = argparse.ArgumentParser(
         prog='Sunshine Steam Adapater Launcher',
         description='This is a launcher for steam games, for use with Nvidia Gamestream/Sunshine. It handles launching of a steam game based on its ID.'
     )
-    parser.add_argument('-g', '--game_id', type=int, help='The steam game id to launch. If not specified, steam big picture mode will be launched.')
+    parser.add_argument('-g', '--game_id', type=int, help='The steam game id to launch. If not specified, nothing will be launched, and the script will exit once big picture mode is closed.')
     parser.add_argument('-p', '--process_name', type=str, required=False,
                         help='If the game to launch is a non-steam game, you must supply the process name here. For example, any games that run via retroarch, you should specify retroarch.exe. If you provide this argument, you must also provide the game_id argument.')
     args = parser.parse_args()
