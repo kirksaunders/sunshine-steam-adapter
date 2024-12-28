@@ -80,24 +80,6 @@ def configure_game_settings_sync(library: Library):
         newline()
     print(f"Configured settings sync for {len(games)} games.")
 
-def write_shortcuts(library: Library):
-    dir = Path(input(f"Input the directory to save the shortcuts to (press enter to use the default of {DEFAULT_SHORTCUT_DIR}): ") or DEFAULT_SHORTCUT_DIR).resolve()
-    # Create directory if it doesn't exist
-    dir.mkdir(parents=True, exist_ok=True)
-    print('Creating shortcuts...')
-    library.write_shortcuts(dir, LAUNCHER_PATH)
-    newline()
-    print(f"Created shortcuts in {dir}.")
-
-def write_batch_shortcuts(library: Library):
-    dir = Path(input(f"Input the directory to save the batch shortcuts to (press enter to use the default of {DEFAULT_SHORTCUT_DIR}): ") or DEFAULT_SHORTCUT_DIR).resolve()
-    # Create directory if it doesn't exist
-    dir.mkdir(parents=True, exist_ok=True)
-    print('Creating batch shortcuts...')
-    library.write_batch_shortcuts(dir, LAUNCHER_PATH)
-    newline()
-    print(f"Created batch shortcuts in {dir}.")
-
 def write_sunshine_config(library: Library):
     path = Path(input(f"Input the path to write the config to (press enter to use the default of {DEFAULT_SUNSHINE_CONFIG_PATH}): ") or DEFAULT_SUNSHINE_CONFIG_PATH).resolve()
     if path.is_file():
@@ -117,10 +99,8 @@ def print_menu():
     print('3. Return removed game to library')
     print('4. Configure non-steam game')
     print('5. Configure game settings synchronization')
-    print('6. Write games to shortcuts')
-    print('7. Write games to batch script shortcuts')
-    print('8. Write games to Sunshine config')
-    print('9. Quit')
+    print('6. Write games to Sunshine config')
+    print('7. Quit')
 
 if __name__ == '__main__':
     print("Loading cached library...")
@@ -150,21 +130,9 @@ if __name__ == '__main__':
             configure_game_settings_sync(library)
         elif choice == 6:
             try:
-                write_shortcuts(library)
-            except BaseException as e:
-                newline()
-                print(f"Failed to write shortcuts. Error was: {traceback.format_exc()}")
-        elif choice == 7:
-            try:
-                write_batch_shortcuts(library)
-            except BaseException as e:
-                newline()
-                print(f"Failed to write batch shortcuts. Error was: {traceback.format_exc()}")
-        elif choice == 8:
-            try:
                 write_sunshine_config(library)
             except BaseException as e:
                 newline()
                 print(f"Failed to write Sunshine config. Error was: {traceback.format_exc()}")
-        elif choice == 9:
+        elif choice == 7:
             exit(0)

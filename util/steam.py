@@ -39,12 +39,18 @@ def get_steam_config_path() -> Path:
     with winreg.OpenKeyEx(winreg.HKEY_CURRENT_USER, r'SOFTWARE\Valve\Steam\ActiveProcess', 0, winreg.KEY_READ) as key:
         return get_steam_install_path() / 'userdata' / str(read_reg_value(key, 'ActiveUser')) / 'config'
 
+__BIG_PICTURE_WINDOW_TITLE = None
+
 def get_big_picture_window() -> int:
-    title = get_localization_entry('SP_WindowTitle_BigPicture')
-    if not title:
+    global __BIG_PICTURE_WINDOW_TITLE
+
+    # Try to read the value, then cache it. If we don't find an entry, throw an error
+    if not __BIG_PICTURE_WINDOW_TITLE:
+        __BIG_PICTURE_WINDOW_TITLE = get_localization_entry('SP_WindowTitle_BigPicture')
+    if not __BIG_PICTURE_WINDOW_TITLE:
         raise ValueError('Failed to find Big Picture mode window title in localization file')
 
-    return win32gui.FindWindow('SDL_app', title)
+    return win32gui.FindWindow('SDL_app', __BIG_PICTURE_WINDOW_TITLE)
 
 def get_steam_window() -> int:
     return win32gui.FindWindow('SDL_app', 'Steam')

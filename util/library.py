@@ -247,22 +247,6 @@ class Library:
             })
         return config
 
-    def write_shortcuts(self, shortcut_dir: Path, launcher_path: Path):
-        for game in self.games:
-            shell = win32com.client.Dispatch("WScript.Shell")
-            shortcut = shell.CreateShortCut(str(shortcut_dir / f"{game.sanitized_name()}.lnk"))
-            shortcut.Targetpath = str(launcher_path)
-            shortcut.Arguments = game.launcher_args()
-            # TODO: Write icons
-            # shortcut.IconLocation = icon
-            shortcut.WindowStyle = 1 # 7 - Minimized, 3 - Maximized, 1 - Normal
-            shortcut.save()
-
-    def write_batch_shortcuts(self, shortcut_dir: Path, launcher_path: Path):
-        for game in self.games:
-            with (shortcut_dir / f"{game.sanitized_name()}.bat").open(mode='w') as file:
-                file.write(f"\"{launcher_path}\" {game.launcher_args()}\n")
-
     def _sort_games(self):
         self.games = sorted(self.games)
 

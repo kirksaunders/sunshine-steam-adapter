@@ -1,5 +1,5 @@
 # Details
-This package contains tools to automatically add your Steam games to your Sunshine (or Nvidia Gamestream) library. The main features are:
+This package contains tools to automatically add your Steam games to your [Sunshine](https://app.lizardbyte.dev/Sunshine) library. The main features are:
 - Automatic detection of both official Steam games, and non-Steam games within your Steam library.
 - Automatic sychronization of artwork. This includes custom artwork (see https://www.steamgriddb.com/boop), even for non-steam games.
 - Automatic* synchronization of game settings. Any changes to game settings you make while streaming will be saved and restored the next time you stream. But, they do not persist outside of streams. This is done on a per-client basis (based on client resolution). This is particularly useful for setting the game's exclusive fullscreen resolution to match the streaming resolution. *The synchronization process is done automatically, but the feature is opt-in for each game. You must provide the path to the game's settings file.
@@ -18,7 +18,7 @@ The installer will also automatically install Steam Big Picture Mode as a game i
 # Compatibility
 Only Windows hosts are supported. The launcher relies heavily on registry keys that Steam writes. In theory, these registries also exist on Linux, but reading them would require maintaing two code paths. Contributions are welcome.
 
-Both Sunshine and Nvidia Gamestream hosts are supported. However, the advanced features (game exit detection, settings sync) are only available with Sunshine.
+Only Sunshine (and not Nvidia Gamestream) is supported. You could technically create a shortcut file or batch script that uses the launcher script with Nvidia Gamestream, but you won't get any of the automatic stream termination when the game closes. And when it comes down to it, Nvidia Gamestream is EOL anyways, and any support in this utility would go largely untested.
 
 # Usage
 ## Setup
@@ -27,16 +27,15 @@ Both Sunshine and Nvidia Gamestream hosts are supported. However, the advanced f
 3. Install the required pip packages by running `python3 -m pip install -r requirements.txt` from this repo root.
 
 ## Installer
-Most users will only be interested in the installer script, which provides an interactive menu for syncing your Steam library with Sunshine/Nvidia Gamestream. The general usage pattern of `installer.py` is as follows:
+Most users will only be interested in the installer script, which provides an interactive menu for syncing your Steam library with Sunshine. The general usage pattern of `installer.py` is as follows:
 1. Ensure Steam is running, and you are logged in to your Steam account.
 2. Run installer with `python3 installer.py` or `./installer.py`.
 3. The installer will automatically load all of your installed official steam games, and any non-steam games in your steam library.
-4. If you have previously run the script, your previous state will be loaded. This includes any non-steam games that you have added, and any official steam games that you have explicitly removed from your Sunshine/Gamestream library.
-5. If any of your games have changed name, those changes will be detected. If any games have been removed/uninstalled from Steam, you will be prompted to remove them from your Sunshine/Gamestream library.
+4. If you have previously run the script, your previous state will be loaded. This includes any non-steam games that you have added, and any official steam games that you have explicitly removed from your Sunshine library.
+5. If any of your games have changed name, those changes will be detected. If any games have been removed/uninstalled from Steam, you will be prompted to remove them from your Sunshine library.
 6. Follow the menu prompts to make any changes to your library. You can remove games, configure settings sync, etc.
-7. After you have finished making changes, you must choose the menu option to apply to Sunshine/Nvidia Gamestream.
-    1. If using Nvidia Gamestream, you must choose the menu option to create batch shortcuts. The shortcuts will be saved to your directory of choosing. You must manually add each shortcut to Nvidia Gamestream via Nvidia GeForce Experience settings.
-    2. If using Sunshine, you must choose the menu option to write to a Sunshine config file. The default save location is the system-wide Sunshine config file. This file requires admin access to modify by default. So, either modify its permissions to allow your user to modify it, or run this script as administrator, or write to a different location and copy over to the protected file manually. **Warning: The existing contents of your config file are not preserved. If you want to maintain your existing Sunshine games, save to a different location, then merge the two manually.**
+7. After you have finished making changes, you must choose the menu option to apply to Sunshine.
+    1. The default save location is the system-wide Sunshine config file. This file requires admin access to modify by default. So, either modify its permissions to allow your user to modify it, or run this script as administrator, or write to a different location and copy over to the protected file manually. **Warning: The existing contents of your config file are not preserved. If you want to maintain your existing Sunshine games, save to a different location, then merge the two manually.**
 8. Quit the script. Your changes are automatically saved. The next time you run the script, it will remember your non-steam games and which games you have explicitly removed from your library.
 
 **Important:** If you move/rename/remove your local checkout of this git repository, any games you've added to Sunshine will stop working. You must keep this repository around.
@@ -55,7 +54,7 @@ Before the launcher is run, you likely want to run the pre-launcher script. This
 For usage, run `python3 pre-launcher.py --help`. Reading the source is also recommended.
 
 ## Teardown
-Similarly to the launcher script, there's a teardown script. This teardown script will ensure that the game is terminated after the stream ends. This is only relevant for Sunshine, since Nvidia Gamestream doesn't provide an ability to run scripts after the stream ends. It does this by killing all non-official child processes of Steam. Advanced users: read source of `teardown.py` for more details.
+Similarly to the launcher script, there's a teardown script. This teardown script will ensure that the game is terminated after the stream ends. It does this by killing all non-official child processes of Steam. Advanced users: read source of `teardown.py` for more details.
 
 ## Settings Sync
 Included is also a settings synchronization script. This script will allow you to make settings changes in your games specifically for each stream resolution. These settings will only apply when streaming to that same stream resolution. The script has two modes: load and save.

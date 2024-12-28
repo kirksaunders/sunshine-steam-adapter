@@ -77,7 +77,7 @@ def launch_game_and_wait_for_close(game_id: Optional[int] = None, process_name: 
 def main():
     parser = argparse.ArgumentParser(
         prog='Sunshine Steam Adapater Launcher',
-        description='This is a launcher for steam games, for use with Nvidia Gamestream/Sunshine. It handles launching of a steam game based on its ID.'
+        description='This is a launcher for steam games, for use with Sunshine. It handles launching of a steam game based on its ID.'
     )
     parser.add_argument('-g', '--game_id', type=int, help='The steam game id to launch. If not specified, nothing will be launched, and the script will exit once big picture mode is closed.')
     parser.add_argument('-p', '--process_name', type=str, required=False,
